@@ -14,11 +14,11 @@
 
 | Field               | Value                                      |
 |---------------------|--------------------------------------------|
-| **Group**           | TRA460_Group_X                             |
+| **Group**           | TRA460_Group_3                            |
 | **Version**         | 1.0                                        |
-| **Date**            | YYYY-MM-DD                                 |
-| **Clinical Mentor** | [Name, Title, Affiliation]                 |
-| **Group Members**   | [Name (Program), Name (Program), ...]      |
+| **Date**            | 2026-04-16                                 |
+| **Clinical Mentor** | Sara Hansson, Specialist in anesthesia                |
+| **Group Members**   | Xiaoyu Chen (MPSOF), Xiyu Du (MPSOF), Nathalie Hogberg (MPCAS), sugash krishnamoorthy (MPDSC)      |
 
 ---
 
