@@ -1,4 +1,4 @@
-# [Project Name] [Required]
+# Patient Insights [Required]
 ## Product Requirements Document
 
 > **TRA460: Digital Health Implementation** | Chalmers University of Technology
@@ -14,11 +14,11 @@
 
 | Field               | Value                                      |
 |---------------------|--------------------------------------------|
-| **Group**           | TRA460_Group_3                            |
+| **Group**           | TRA460_Group_3                             |
 | **Version**         | 1.0                                        |
-| **Date**            | 2026-04-16                                 |
-| **Clinical Mentor** | Sara Hansson, Specialist in anesthesia                |
-| **Group Members**   | Xiaoyu Chen (MPSOF), Xiyu Du (MPSOF), Nathalie Hogberg (MPCAS), sugash krishnamoorthy (MPDSC)      |
+| **Date**            | 2026-04-17                                 |
+| **Clinical Mentor** | Sara Hansson, Specialist in anesthesia and intensive care, Sahlgrenska University Hospital |
+| **Group Members**   | Xiaoyu Chen (MPSOF), Xiyu Du (MPSOF), Nathalie Hogberg (MPCAS), Sugash Krishnamoorthy (MPDSC) |
 
 ---
 
@@ -39,9 +39,9 @@
            that reduces time-to-treatment for recurrent events."
 -->
 
-> **A way to** [verb/action]
-> **for** [specific population and/or clinical setting]
-> **that** [desired outcome or value delivered].
+> **A way to** provide accessible and understandable health information
+> **for** adult patients
+> **that** improves patient understanding of and adherence to their care plan.
 
 ---
 
@@ -55,6 +55,10 @@
   - How significant is this problem? (incidence, prevalence, burden)
   - Why does it matter — clinically, economically, or humanly?
 -->
+
+Patients cannot easily access or understand the information in their health journals. The system is built for clinicians, not patients, and the language used in the notes is therefore difficult for anyone without a medical background to understand. As a result, many patients struggle with the current system, regardless of age or digital literacy. 
+
+When a patient is uncertain of their care plan, they call the doctor's office and ask questions. This results in added work for clinicians between and after appointments. 
 
 ### 1.2 Key Clinical Insights [Required]
 
@@ -72,6 +76,16 @@
   examples are more valuable than generalizations.
 -->
 
+#### **Observations & Current Workflow:**
+Currently, medical records are designed and written primarily for medical professionals, rather than for the patients receiving the care. While patients have the ability to access their medical records online through the 1177.se portal, the system is difficult to navigate and the medical language used is not always easy for a layperson to understand. Because the digital systems do not adequately support patient comprehension, physicians sometimes have to resort to a manual workaround: writing physical paper notes to hand to the patient during the visit.
+
+#### **Friction Points & Inefficiencies:**
+The core friction point lies in the communication gap between the clinic and the patient's everyday life. Specifically:
+
+**Lack of Clinical Verification**: Physicians currently lack a reliable feedback loop to ensure the patient has actually understood the critical information they intended to communicate.
+
+**The "Care Circle" Gap**: Patients often rely on their support network, but relatives and friends lack a reliable way to understand what the physician communicated, especially if the patient themselves did not fully grasp the information during the visit.
+
 ### 1.3 Existing Solutions & Gaps [Required]
 
 <!--
@@ -82,6 +96,8 @@
   - Why are they insufficient, inaccessible, or underused?
   - What gap remains that your project could fill?
 -->
+
+Patients can access their journals and the doctor's notes on 1177 to recall the content of the visits. But there are always terminologies that are hard for the patients to understand. So our project is aimed to bridge the knowledge gap between patients and doctors and create a user-friendly application that is integrated with 1177.
 
 ### 1.4 Success Metrics [Recommended]
 
@@ -110,6 +126,8 @@
   Be specific: "Cardiac nurses in outpatient clinics" not just "nurses."
 -->
 
+Adult patients who struggle to access and/or understand their health information. 
+
 ### 2.2 Other Stakeholders [Required]
 
 <!--
@@ -119,6 +137,14 @@
   Consider: patients, caregivers, administrators, IT departments,
   payers/insurers, regulators, clinical champions, etc.
 -->
+
+**Family Members and Informal Caregivers**: Relatives or friends who provide support to the patient. They are highly affected stakeholders because they currently lack a reliable way to understand the physician's communication if the patient themselves did not fully grasp it during the visit. They will benefit from the tool's secure sharing features.
+
+**Physicians and Clinical Staff**: The medical professionals who author the original records. While the medical records are primarily written for other professionals, doctors are heavily invested in this solution because they currently lack a way to verify that patients have understood critical care instructions.
+
+**Regional IT Departments**: The organizations responsible for maintaining the national 1177.se infrastructure and regional healthcare databases. They have significant influence over data accessibility, system integration, and security standards.
+
+**Regulatory and Compliance Bodies (e.g., IMY)**: Authorities responsible for enforcing the General Data Protection Regulation (GDPR) and the Swedish Patient Data Act (Patientdatalagen). Since the proposed solution involves extracting and processing sensitive health data through an LLM, these bodies heavily influence the privacy and security requirements of the project.
 
 ### 2.3 User Journey — Current State [Recommended]
 
@@ -134,9 +160,20 @@
 
 ## 3. Solution Vision [Required]
 
-We propose to build an easy-to-use mobile and/or web application that empowers patients to better understand their medical conditions through clear, accessible summarization of their clinical data. The app will translate complex medical information into patient-friendly language, allowing users to easily review their diagnoses, treatments, and health insights in one place.
+<!--
+  REQUIRED FOR v1.0
 
-Success from the patient's perspective means they can open the app, quickly grasp what's happening with their health,, and feel more engaged and confident in managing their condition. This directly reduces confusion and improves health literacy—enabling patients to be active participants in their own care.
+  1-2 paragraphs maximum. This is your "north star," not a feature list.
+  - What is the high-level concept?
+  - How does it directly address the Needs Statement?
+  - What does success look like from the user's perspective?
+
+  Keep it directional. You will refine this throughout the course.
+-->
+
+We propose to build an easy-to-use mobile application that empowers patients to better understand their medical conditions through a clear, accessible summarization of their clinical data. The app will translate complex medical information into patient-friendly language, allowing users to easily review their diagnoses, treatments, and health insights in one place.
+
+Success from the patient's perspective means they can open the app, quickly grasp what's happening with their health, and feel more engaged and confident in managing their condition. This directly reduces confusion and improves health literacy — enabling patients to be active participants in their own care.
 
 ---
 
@@ -223,5 +260,5 @@ Success from the patient's perspective means they can open the app, quickly gras
 
 | Version | Date       | Summary of Changes                                  |
 |---------|------------|-----------------------------------------------------|
-| 1.0     | YYYY-MM-DD | Initial draft after first clinical mentor meeting   |
+| 1.0     | 2026-04-17 | Initial draft after first clinical mentor meeting   |
 |         |            |                                                     |
