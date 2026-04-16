@@ -134,16 +134,9 @@
 
 ## 3. Solution Vision [Required]
 
-<!--
-  REQUIRED FOR v1.0
+We propose to build an easy-to-use mobile and/or web application that empowers patients to better understand their medical conditions through clear, accessible summarization of their clinical data. The app will translate complex medical information into patient-friendly language, allowing users to easily review their diagnoses, treatments, and health insights in one place.
 
-  1-2 paragraphs maximum. This is your "north star," not a feature list.
-  - What is the high-level concept?
-  - How does it directly address the Needs Statement?
-  - What does success look like from the user's perspective?
-
-  Keep it directional. You will refine this throughout the course.
--->
+Success from the patient's perspective means they can open the app, quickly grasp what's happening with their health,, and feel more engaged and confident in managing their condition. This directly reduces confusion and improves health literacy—enabling patients to be active participants in their own care.
 
 ---
 
