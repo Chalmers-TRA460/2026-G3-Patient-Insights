@@ -250,9 +250,20 @@ Success from the patient's perspective means they can open the app, quickly gras
   - What do you need to ask your clinical mentor next?
 -->
 
-- **[Question/Risk]:** [Your plan to resolve it, and by when]
-- **[Question/Risk]:** [Your plan to resolve it, and by when]
--
+- **Risk - GDPR/PDL Data Processing Compliance:** How will we handle patient data through an LLM while ensuring full compliance with Swedish data protection laws?  
+  *Plan:* Consult with IMY and legal counsel on data residency, retention, and consent models 
+
+- **Question - 1177 Integration Access:** Can we technically access patient records from 1177.se via API, and what are the barriers (technical, legal, authentication)?  
+  *Plan:* Contact regional IT departments managing 1177 infrastructure to explore integration pathways 
+
+- **Question - Clinical Accuracy Verification:** How do we validate that LLM-generated summaries remain clinically accurate and don't misrepresent diagnoses or treatments?  
+  *Plan:* Develop a clinical review protocol with Sara Hansson; test on 5–10 real patient records 
+
+- **Risk - Care Circle Consent Model:** What consent framework ensures patients control who can access their shared health information while maintaining privacy?  
+  *Plan:* Co-design a consent and sharing policy with clinical mentor and legal input 
+
+- **Risk - Clinical Workflow Integration:** Will physicians and nurses actually use this tool in their existing workflow, or will it add burden?  
+  *Plan:* Map current clinical workflow with the department to identify integration points that don't increase clinician workload 
 
 ---
 
