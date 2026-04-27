@@ -1,0 +1,214 @@
+{
+  "project_info": {
+    "project_number": "1069489323213",
+    "project_id": "ems-app-710ec",
+    "storage_bucket": "ems-app-710ec.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069489323213:android:4c9e9b025348464d10bd84",
+        "android_client_info": {
+          "package_name": "com.example.digital_health"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5cHF7He0XjWk0hgESX6YbaocgmD-fbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069489323213-4u1ddjpc9klndp046qibkga86rm6o7ne.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069489323213:android:1b34e94035cf4a9110bd84",
+        "android_client_info": {
+          "package_name": "com.example.health_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069489323213-5b2pt1l9i35nolvrse9klvo8na1gll4k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.health_app",
+            "certificate_hash": "bbf356fa817aa6c73106cba831fddb12cc39c211"
+          }
+        },
+        {
+          "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5cHF7He0XjWk0hgESX6YbaocgmD-fbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069489323213-4u1ddjpc9klndp046qibkga86rm6o7ne.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069489323213:android:aae6d6e721c569ce10bd84",
+        "android_client_info": {
+          "package_name": "com.example.monthly_expense_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069489323213-a4lk5trl23bg9l31f731fa1qoi0s0je0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.monthly_expense_app",
+            "certificate_hash": "bbf356fa817aa6c73106cba831fddb12cc39c211"
+          }
+        },
+        {
+          "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5cHF7He0XjWk0hgESX6YbaocgmD-fbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069489323213-4u1ddjpc9klndp046qibkga86rm6o7ne.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069489323213:android:2636112945885cb810bd84",
+        "android_client_info": {
+          "package_name": "com.example.my_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5cHF7He0XjWk0hgESX6YbaocgmD-fbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069489323213-4u1ddjpc9klndp046qibkga86rm6o7ne.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069489323213:android:aa70ee520df294c210bd84",
+        "android_client_info": {
+          "package_name": "com.example.task_manager_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069489323213-e5u9eqlj9jq4v8ii8ic9mpvfiqpa1eq8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.task_manager_app",
+            "certificate_hash": "bbf356fa817aa6c73106cba831fddb12cc39c211"
+          }
+        },
+        {
+          "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5cHF7He0XjWk0hgESX6YbaocgmD-fbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069489323213-n3eknn6qc2rth0nrtecoptnk9t7nqh1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069489323213-4u1ddjpc9klndp046qibkga86rm6o7ne.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

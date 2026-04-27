@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
 import 'nutrition_screen.dart';
 import 'prepare_visit_screen.dart';
+import 'record_consultation_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -189,6 +190,13 @@ class HomeScreen extends StatelessWidget {
                   const Color(0xFFEEF2FF),
                   const Color(0xFF4338CA),
                   onTap: () => Get.to(() => const PrepareVisitScreen()),
+                ),
+                _actionCard(
+                  Icons.mic_rounded,
+                  'Record\nLive Visit',
+                  const Color(0xFFFEF2F2),
+                  const Color(0xFFDC2626),
+                  onTap: () => Get.to(() => const RecordConsultationScreen()),
                 ),
                 _actionCard(
                   Icons.history_rounded,
