@@ -13,6 +13,20 @@ class AuthController extends GetxController {
   RxString errorMessage = ''.obs;
 
   @override
+  void onReady() {
+    super.onReady();
+    ever(firebaseUser, _initialScreen);
+  }
+
+  void _initialScreen(User? user) {
+    if (user == null) {
+      Get.offAllNamed('/login');
+    } else {
+      Get.offAllNamed('/');
+    }
+  }
+
+  @override
   void onInit() {
     super.onInit();
     firebaseUser.bindStream(_auth.authStateChanges());

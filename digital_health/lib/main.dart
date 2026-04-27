@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/health_controller.dart';
 import 'screens/main_screen.dart';
@@ -14,9 +15,11 @@ import 'screens/consultation_history_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
-    print("Firebase not initialized: $e. Did you add google-services.json?");
+    print("Firebase not initialized: $e");
   }
   Get.put(AuthController());
   Get.put(HealthController());
@@ -56,7 +59,7 @@ class HealthApp extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
       ),
-      initialRoute: '/',
+      initialRoute: '/login',
       getPages: [
         GetPage(name: '/', page: () => const MainScreen()),
         GetPage(name: '/login', page: () => const LoginScreen()),

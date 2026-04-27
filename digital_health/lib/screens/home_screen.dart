@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
 import 'nutrition_screen.dart';
+import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
 import 'record_consultation_screen.dart';
 
@@ -117,7 +118,7 @@ class HomeScreen extends StatelessWidget {
                     color: Color(0xFF1E293B))),
             const SizedBox(height: 14),
             GestureDetector(
-              onTap: () => Get.to(() => const NutritionScreen()),
+              onTap: () => Get.to(() => const AiChatScreen()),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(

@@ -14,7 +14,27 @@ class ConsultationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Date & Doctor
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  consultation['date'] ?? 'Recent Visit',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+                const Spacer(),
+                Text(
+                  consultation['doctorName'] ?? 'Doctor Visit',
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // AI Summary Card
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FDF4),
@@ -39,21 +59,73 @@ class ConsultationDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            const Text('Patient Concerns', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            if (consultation['symptoms'] != null)
-              _buildInfoSection('Symptoms Reported', List<String>.from(consultation['symptoms']).join(', ')),
-            if (consultation['questions'] != null)
-              _buildInfoSection('Questions Asked', List<String>.from(consultation['questions']).join(', ')),
-            
-            const SizedBox(height: 30),
-            const Text('Full Transcript', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            Text(
-              consultation['transcript'] ?? 'Transcript not available.',
-              style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
+            const SizedBox(height: 25),
+
+            // Full Conversation Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF475569)),
+                      SizedBox(width: 10),
+                      Text('Full Conversation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    consultation['transcript'] ?? 'Transcript not available.',
+                    style: const TextStyle(fontSize: 16, color: Color(0xFF475569), height: 1.6),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 25),
+
+            // Patient Concerns
+            if ((consultation['symptoms'] != null && (consultation['symptoms'] as List).isNotEmpty) ||
+                (consultation['questions'] != null && (consultation['questions'] as List).isNotEmpty))
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFFED7AA)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.assignment_ind_rounded, color: Color(0xFFC2410C)),
+                        SizedBox(width: 10),
+                        Text('Patient Concerns', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFC2410C))),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    if (consultation['symptoms'] != null && (consultation['symptoms'] as List).isNotEmpty) ...[
+                      const Text('Symptoms Reported:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                      const SizedBox(height: 5),
+                      Text(List<String>.from(consultation['symptoms']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                      const SizedBox(height: 12),
+                    ],
+                    if (consultation['questions'] != null && (consultation['questions'] as List).isNotEmpty) ...[
+                      const Text('Questions Asked:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                      const SizedBox(height: 5),
+                      Text(List<String>.from(consultation['questions']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                    ],
+                  ],
+                ),
+              ),
             const SizedBox(height: 40),
           ],
         ),

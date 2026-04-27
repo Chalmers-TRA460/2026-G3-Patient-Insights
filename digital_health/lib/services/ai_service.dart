@@ -4,7 +4,7 @@ import '../models/patient_model.dart';
 
 class AiService {
   static const String _apiKey =
-      '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';
+      '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';
   static const String _url =
       'https://openrouter.ai/api/v1/chat/completions';
 
@@ -50,11 +50,12 @@ Patient Question: $question
         }),
       );
 
+      print('AI Response Code: ${response.statusCode}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['choices'][0]['message']['content'];
       } else {
-        return "I'm having trouble connecting right now. Please try again.";
+        return "I'm having trouble connecting (Error ${response.statusCode}). Please check your API key and try again.";
       }
     } catch (e) {
       return "Connection error. Please check your internet and try again.";
@@ -88,6 +89,8 @@ $transcript
         headers: {
           'Authorization': 'Bearer $_apiKey',
           'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://healthapp.com',
+          'X-Title': 'Elderly Health Companion',
         },
         body: jsonEncode({
           'model': 'nvidia/nemotron-3-super-120b-a12b:free',
@@ -97,6 +100,7 @@ $transcript
         }),
       );
 
+      print('AI Summary Response Code: ${response.statusCode}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['choices'][0]['message']['content'];
