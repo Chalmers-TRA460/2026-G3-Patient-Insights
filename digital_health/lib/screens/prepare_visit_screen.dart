@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import 'visit_prep_summary_screen.dart';
 
 class PrepareVisitScreen extends StatelessWidget {
   const PrepareVisitScreen({super.key});
@@ -91,13 +92,26 @@ class PrepareVisitScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Get.back(),
-                child: const Text("Done — I'm ready!"),
-              ),
-            ),
+            Obx(() => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: c.isGeneratingSummary.value
+                        ? null
+                        : () async {
+                            await c.submitQuestionnaire();
+                            if (c.visitPrepSummary.value.isNotEmpty) {
+                              Get.off(() => const VisitPrepSummaryScreen());
+                            }
+                          },
+                    child: c.isGeneratingSummary.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text("Done — I'm ready!"),
+                  ),
+                )),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
+import '../services/ai_service.dart';
 
 class HealthController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,6 +16,8 @@ class HealthController extends GetxController {
   RxString duration = ''.obs;
   RxString symptomTrend = ''.obs;
   RxList<String> visitGoals = <String>[].obs;
+  RxString visitPrepSummary = ''.obs;
+  RxBool isGeneratingSummary = false.obs;
   RxBool isLoading = false.obs;
 
   @override
@@ -143,10 +146,46 @@ class HealthController extends GetxController {
     }
   }
 
+  Future<void> submitQuestionnaire() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    isGeneratingSummary.value = true;
+    try {
+      final summary = await AiService.summarizeVisitPrep(
+        visitReasons: visitReasons,
+        duration: duration.value,
+        symptomTrend: symptomTrend.value,
+        visitGoals: visitGoals,
+      );
+
+      visitPrepSummary.value = summary;
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('visitPreps')
+          .add({
+        'timestamp': FieldValue.serverTimestamp(),
+        'date': DateTime.now().toIso8601String().split('T')[0],
+        'visitReasons': visitReasons.toList(),
+        'duration': duration.value,
+        'symptomTrend': symptomTrend.value,
+        'visitGoals': visitGoals.toList(),
+        'summary': summary,
+      });
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to save questionnaire');
+    } finally {
+      isGeneratingSummary.value = false;
+    }
+  }
+
   void clearVisitNotes() {
     visitReasons.clear();
     duration.value = '';
     symptomTrend.value = '';
     visitGoals.clear();
+    visitPrepSummary.value = '';
   }
 }
