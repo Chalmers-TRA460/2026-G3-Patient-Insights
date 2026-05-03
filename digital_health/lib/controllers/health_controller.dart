@@ -161,21 +161,23 @@ class HealthController extends GetxController {
 
       visitPrepSummary.value = summary;
 
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('visitPreps')
-          .add({
-        'timestamp': FieldValue.serverTimestamp(),
-        'date': DateTime.now().toIso8601String().split('T')[0],
-        'visitReasons': visitReasons.toList(),
-        'duration': duration.value,
-        'symptomTrend': symptomTrend.value,
-        'visitGoals': visitGoals.toList(),
-        'summary': summary,
+      // Save onto the user document — uses the same path existing rules allow.
+      // Firestore save is best-effort: failure does not block showing the summary.
+      _firestore.collection('users').doc(user.uid).set({
+        'latestVisitPrep': {
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          'visitReasons': visitReasons.toList(),
+          'duration': duration.value,
+          'symptomTrend': symptomTrend.value,
+          'visitGoals': visitGoals.toList(),
+          'summary': summary,
+        }
+      }, SetOptions(merge: true)).catchError((e) {
+        print('visitPrep save failed: $e');
       });
     } catch (e) {
-      Get.snackbar('Error', 'Failed to save questionnaire');
+      print('submitQuestionnaire error: $e');
+      Get.snackbar('Error', e.toString());
     } finally {
       isGeneratingSummary.value = false;
     }
