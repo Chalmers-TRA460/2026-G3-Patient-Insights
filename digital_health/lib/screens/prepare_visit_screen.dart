@@ -3,8 +3,17 @@ import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
 import 'visit_prep_summary_screen.dart';
 
-class PrepareVisitScreen extends StatelessWidget {
-  const PrepareVisitScreen({super.key});
+class PrepareVisitScreen extends StatefulWidget {
+  final int? editIndex;
+  const PrepareVisitScreen({super.key, this.editIndex});
+
+  @override
+  State<PrepareVisitScreen> createState() => _PrepareVisitScreenState();
+}
+
+class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
+  late final HealthController _c;
+  final _titleController = TextEditingController();
 
   static const _visitReasons = [
     'Pain or discomfort',
@@ -42,23 +51,65 @@ class PrepareVisitScreen extends StatelessWidget {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _c = Get.find<HealthController>();
+    if (widget.editIndex != null) {
+      final prep = _c.visitPreps[widget.editIndex!];
+      _c.visitTitle.value = prep['title'] ?? '';
+      _c.visitReasons.value = List<String>.from(prep['visitReasons'] ?? []);
+      _c.duration.value = prep['duration'] ?? '';
+      _c.symptomTrend.value = prep['symptomTrend'] ?? '';
+      _c.visitGoals.value = List<String>.from(prep['visitGoals'] ?? []);
+      _titleController.text = _c.visitTitle.value;
+    } else {
+      _c.clearVisitNotes();
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = Get.find<HealthController>();
+    final isEditing = widget.editIndex != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Before your appointment')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit preparation' : 'Before your appointment'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Title ──
+            _buildSection(
+              title: 'Title',
+              subtitle: 'Give this preparation a name so you can find it easily',
+              child: TextField(
+                controller: _titleController,
+                onChanged: (v) => _c.visitTitle.value = v,
+                decoration: InputDecoration(
+                  hintText: 'e.g. GP visit – back pain',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                ),
+              ),
+            ),
+
             _buildSection(
               title: 'What brings you in today?',
               subtitle: 'Select all that apply',
               child: Obx(() => _buildFilterChips(
                     options: _visitReasons,
-                    selected: c.visitReasons,
-                    onTap: c.toggleVisitReason,
+                    selected: _c.visitReasons,
+                    onTap: _c.toggleVisitReason,
                   )),
             ),
 
@@ -67,8 +118,8 @@ class PrepareVisitScreen extends StatelessWidget {
               subtitle: 'Pick the closest one',
               child: Obx(() => _buildChoiceChips(
                     options: _durations,
-                    selected: c.duration.value,
-                    onTap: (v) => c.duration.value = v,
+                    selected: _c.duration.value,
+                    onTap: (v) => _c.duration.value = v,
                   )),
             ),
 
@@ -76,8 +127,8 @@ class PrepareVisitScreen extends StatelessWidget {
               title: 'Is it getting better or worse?',
               child: Obx(() => _buildChoiceChips(
                     options: _trends,
-                    selected: c.symptomTrend.value,
-                    onTap: (v) => c.symptomTrend.value = v,
+                    selected: _c.symptomTrend.value,
+                    onTap: (v) => _c.symptomTrend.value = v,
                   )),
             ),
 
@@ -86,8 +137,8 @@ class PrepareVisitScreen extends StatelessWidget {
               subtitle: 'Select all that apply',
               child: Obx(() => _buildFilterChips(
                     options: _visitGoals,
-                    selected: c.visitGoals,
-                    onTap: c.toggleVisitGoal,
+                    selected: _c.visitGoals,
+                    onTap: _c.toggleVisitGoal,
                   )),
             ),
 
@@ -95,21 +146,24 @@ class PrepareVisitScreen extends StatelessWidget {
             Obx(() => SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: c.isGeneratingSummary.value
+                    onPressed: _c.isGeneratingSummary.value
                         ? null
                         : () async {
-                            await c.submitQuestionnaire();
-                            if (c.visitPrepSummary.value.isNotEmpty) {
-                              Get.off(() => const VisitPrepSummaryScreen());
+                            await _c.submitQuestionnaire(
+                                editIndex: widget.editIndex);
+                            if (_c.visitPrepSummary.value.isNotEmpty) {
+                              final idx = widget.editIndex ?? 0;
+                              Get.off(() => VisitPrepSummaryScreen(
+                                  data: _c.visitPreps[idx]));
                             }
                           },
-                    child: c.isGeneratingSummary.value
+                    child: _c.isGeneratingSummary.value
                         ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text("Done — I'm ready!"),
+                        : Text(isEditing ? 'Save changes' : "Done — I'm ready!"),
                   ),
                 )),
           ],
