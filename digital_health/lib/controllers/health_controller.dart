@@ -11,8 +11,10 @@ class HealthController extends GetxController {
   Rxn<Patient> patient = Rxn<Patient>();
   RxList<Map<String, dynamic>> consultations =
       <Map<String, dynamic>>[].obs;
-  RxList<String> symptoms = <String>[].obs;
-  RxList<String> questionsForDoctor = <String>[].obs;
+  RxList<String> visitReasons = <String>[].obs;
+  RxString duration = ''.obs;
+  RxString symptomTrend = ''.obs;
+  RxList<String> visitGoals = <String>[].obs;
   RxBool isLoading = false.obs;
 
   @override
@@ -125,16 +127,26 @@ class HealthController extends GetxController {
     return missing;
   }
 
-  void addSymptom(String s) {
-    if (s.isNotEmpty && !symptoms.contains(s)) symptoms.add(s);
+  void toggleVisitReason(String reason) {
+    if (visitReasons.contains(reason)) {
+      visitReasons.remove(reason);
+    } else {
+      visitReasons.add(reason);
+    }
   }
 
-  void removeSymptom(String s) => symptoms.remove(s);
-
-  void addQuestion(String q) {
-    if (q.isNotEmpty && !questionsForDoctor.contains(q))
-      questionsForDoctor.add(q);
+  void toggleVisitGoal(String goal) {
+    if (visitGoals.contains(goal)) {
+      visitGoals.remove(goal);
+    } else {
+      visitGoals.add(goal);
+    }
   }
 
-  void removeQuestion(String q) => questionsForDoctor.remove(q);
+  void clearVisitNotes() {
+    visitReasons.clear();
+    duration.value = '';
+    symptomTrend.value = '';
+    visitGoals.clear();
+  }
 }

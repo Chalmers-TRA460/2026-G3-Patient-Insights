@@ -63,12 +63,21 @@ Patient Question: $question
   }
 
   static Future<String> summarizeConsultation(
-    String transcript,
-    List<String> symptoms,
-    List<String> questions,
-  ) async {
+    String transcript, {
+    List<String> visitReasons = const [],
+    String duration = '',
+    String symptomTrend = '',
+    List<String> visitGoals = const [],
+  }) async {
+    final preVisitContext = [
+      if (visitReasons.isNotEmpty) 'Reason for visit: ${visitReasons.join(', ')}',
+      if (duration.isNotEmpty) 'Duration: $duration',
+      if (symptomTrend.isNotEmpty) 'Trend: $symptomTrend',
+      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
+    ].join('\n');
+
     final prompt = '''
-Please summarize this doctor-patient consultation in clear, simple, and reassuring language for an elderly patient.
+Please summarize this doctor-patient consultation in clear, simple, and reassuring language for the patient.
 
 Focus on:
 1. What the doctor found
@@ -76,8 +85,8 @@ Focus on:
 3. Next steps and follow-up appointments
 4. Answers to the patient's concerns
 
-Symptoms the patient reported: ${symptoms.join(', ')}
-Questions the patient had: ${questions.join(', ')}
+What the patient prepared before the visit:
+$preVisitContext
 
 Full Consultation Transcript:
 $transcript

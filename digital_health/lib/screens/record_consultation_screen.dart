@@ -191,8 +191,10 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     try {
       final summary = await AiService.summarizeConsultation(
         textToSummarize,
-        _healthController.symptoms,
-        _healthController.questionsForDoctor,
+        visitReasons: _healthController.visitReasons,
+        duration: _healthController.duration.value,
+        symptomTrend: _healthController.symptomTrend.value,
+        visitGoals: _healthController.visitGoals,
       );
 
       final user = FirebaseAuth.instance.currentUser;
@@ -207,13 +209,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': textToSummarize,
           'summary': summary,
-          'symptoms': _healthController.symptoms.toList(),
-          'questions': _healthController.questionsForDoctor.toList(),
+          'visitReasons': _healthController.visitReasons.toList(),
+          'duration': _healthController.duration.value,
+          'symptomTrend': _healthController.symptomTrend.value,
+          'visitGoals': _healthController.visitGoals.toList(),
         });
-        
+
         await _healthController.fetchConsultations();
-        _healthController.symptoms.clear();
-        _healthController.questionsForDoctor.clear();
+        _healthController.clearVisitNotes();
 
         Get.back();
         Get.snackbar('Success', 'Visit summary saved to history!');
