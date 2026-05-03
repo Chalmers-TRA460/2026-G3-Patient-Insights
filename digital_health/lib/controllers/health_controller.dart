@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -70,7 +71,10 @@ class HealthController extends GetxController {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      await _firestore.collection('users').doc(user.uid).update(data);
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(data, SetOptions(merge: true));
       await fetchPatientData();
     } catch (e) {
       Get.snackbar('Error', 'Failed to update health profile');
@@ -91,6 +95,19 @@ class HealthController extends GetxController {
     if (p.vitals.isNotEmpty) filled++;
     if (p.emergencyContact != null) filled++;
     return (filled / total) * 100;
+  }
+
+  bool get canAccessHealthProfile => completionPercentage > 0;
+
+  void promptProfileUpdate() {
+    Get.snackbar(
+      'Update your profile first',
+      'Please complete your medical record before opening My Health Profile.',
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      backgroundColor: const Color(0xFF1E293B),
+      colorText: Colors.white,
+    );
   }
 
   List<String> get missingFields {

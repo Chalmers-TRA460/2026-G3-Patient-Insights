@@ -9,6 +9,15 @@ import 'record_consultation_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  void _openHealthProfile(HealthController controller) {
+    if (!controller.canAccessHealthProfile) {
+      controller.promptProfileUpdate();
+      return;
+    }
+
+    Get.toNamed('/profile');
+  }
+
   @override
   Widget build(BuildContext context) {
     final HealthController controller = Get.find<HealthController>();
@@ -211,7 +220,7 @@ class HomeScreen extends StatelessWidget {
                   'My Health\nProfile',
                   const Color(0xFFFFF7ED),
                   const Color(0xFFC2410C),
-                  onTap: () => Get.toNamed('/profile'),
+                  onTap: () => _openHealthProfile(controller),
                 ),
                 _actionCard(
                   Icons.medication_rounded,
