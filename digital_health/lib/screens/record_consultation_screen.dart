@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/ai_service.dart';
 import '../controllers/health_controller.dart';
+import '../models/questionnaire_model.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class RecordConsultationScreen extends StatefulWidget {
@@ -189,9 +190,15 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     setState(() => _isSummarizing = true);
 
     try {
+      // Derive visit-reason labels from the progressive-disclosure state.
+      final visitReasonLabels = kVisitTaxonomy
+          .where((cat) => _healthController.selectedCategories.contains(cat.id))
+          .map((cat) => cat.label)
+          .toList();
+
       final summary = await AiService.summarizeConsultation(
         textToSummarize,
-        visitReasons: _healthController.visitReasons,
+        visitReasons: visitReasonLabels,
         duration: _healthController.duration.value,
         symptomTrend: _healthController.symptomTrend.value,
         visitGoals: _healthController.visitGoals,
@@ -209,7 +216,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': textToSummarize,
           'summary': summary,
-          'visitReasons': _healthController.visitReasons.toList(),
+          'visitReasons': visitReasonLabels,
           'duration': _healthController.duration.value,
           'symptomTrend': _healthController.symptomTrend.value,
           'visitGoals': _healthController.visitGoals.toList(),
