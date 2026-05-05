@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class ConsultationDetailScreen extends StatelessWidget {
   final Map<String, dynamic> consultation;
@@ -8,7 +9,7 @@ class ConsultationDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Visit Summary')),
+      appBar: AppBar(title: Text('detail.title'.tr)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -17,16 +18,23 @@ class ConsultationDetailScreen extends StatelessWidget {
             // Date & Doctor
             Row(
               children: [
-                const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
+                const Icon(Icons.calendar_today,
+                    color: Colors.blue, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  consultation['date'] ?? 'Recent Visit',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+                  consultation['date'] as String? ??
+                      'detail.recent'.tr,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue),
                 ),
                 const Spacer(),
                 Text(
-                  consultation['doctorName'] ?? 'Doctor Visit',
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  consultation['doctorName'] as String? ??
+                      'detail.doctor'.tr,
+                  style: const TextStyle(
+                      fontSize: 16, color: Colors.grey),
                 ),
               ],
             ),
@@ -44,17 +52,26 @@ class ConsultationDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, color: Color(0xFF15803D)),
-                      SizedBox(width: 10),
-                      Text('AI Generated Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
+                      const Icon(Icons.auto_awesome_rounded,
+                          color: Color(0xFF15803D)),
+                      const SizedBox(width: 10),
+                      Text('detail.ai_summary'.tr,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF15803D))),
                     ],
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    consultation['summary'] ?? 'No summary available for this visit.',
-                    style: const TextStyle(fontSize: 18, height: 1.6, color: Color(0xFF166534)),
+                    consultation['summary'] as String? ??
+                        'detail.no_summary'.tr,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        height: 1.6,
+                        color: Color(0xFF166534)),
                   ),
                 ],
               ),
@@ -73,17 +90,26 @@ class ConsultationDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF475569)),
-                      SizedBox(width: 10),
-                      Text('Full Conversation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                      const Icon(Icons.chat_bubble_outline_rounded,
+                          color: Color(0xFF475569)),
+                      const SizedBox(width: 10),
+                      Text('detail.transcript'.tr,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF334155))),
                     ],
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    consultation['transcript'] ?? 'Transcript not available.',
-                    style: const TextStyle(fontSize: 16, color: Color(0xFF475569), height: 1.6),
+                    consultation['transcript'] as String? ??
+                        'detail.no_transcript'.tr,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF475569),
+                        height: 1.6),
                   ),
                 ],
               ),
@@ -103,36 +129,78 @@ class ConsultationDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.assignment_ind_rounded, color: Color(0xFFC2410C)),
-                        SizedBox(width: 10),
-                        Text('Before the visit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFC2410C))),
+                        const Icon(Icons.assignment_ind_rounded,
+                            color: Color(0xFFC2410C)),
+                        const SizedBox(width: 10),
+                        Text('detail.before'.tr,
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFC2410C))),
                       ],
                     ),
                     const SizedBox(height: 15),
-                    if (consultation['visitReasons'] != null && (consultation['visitReasons'] as List).isNotEmpty) ...[
-                      const Text('Reason for visit:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['visitReasons'] != null &&
+                        (consultation['visitReasons'] as List)
+                            .isNotEmpty) ...[
+                      Text('detail.reason'.tr,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(List<String>.from(consultation['visitReasons']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(
+                          List<String>.from(
+                                  consultation['visitReasons'])
+                              .join(', '),
+                          style: const TextStyle(
+                              fontSize: 16, height: 1.5)),
                       const SizedBox(height: 12),
                     ],
-                    if (consultation['duration'] != null && (consultation['duration'] as String).isNotEmpty) ...[
-                      const Text('Duration:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['duration'] != null &&
+                        (consultation['duration'] as String)
+                            .isNotEmpty) ...[
+                      Text('detail.duration'.tr,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(consultation['duration'] as String, style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(consultation['duration'] as String,
+                          style: const TextStyle(
+                              fontSize: 16, height: 1.5)),
                       const SizedBox(height: 12),
                     ],
-                    if (consultation['symptomTrend'] != null && (consultation['symptomTrend'] as String).isNotEmpty) ...[
-                      const Text('Getting better or worse:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['symptomTrend'] != null &&
+                        (consultation['symptomTrend'] as String)
+                            .isNotEmpty) ...[
+                      Text('detail.trend'.tr,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(consultation['symptomTrend'] as String, style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(consultation['symptomTrend'] as String,
+                          style: const TextStyle(
+                              fontSize: 16, height: 1.5)),
                       const SizedBox(height: 12),
                     ],
-                    if (consultation['visitGoals'] != null && (consultation['visitGoals'] as List).isNotEmpty) ...[
-                      const Text('Wanted from visit:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['visitGoals'] != null &&
+                        (consultation['visitGoals'] as List)
+                            .isNotEmpty) ...[
+                      Text('detail.wanted'.tr,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(List<String>.from(consultation['visitGoals']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(
+                          List<String>.from(consultation['visitGoals'])
+                              .join(', '),
+                          style: const TextStyle(
+                              fontSize: 16, height: 1.5)),
                     ],
                   ],
                 ),
@@ -145,23 +213,13 @@ class ConsultationDetailScreen extends StatelessWidget {
   }
 
   bool _hasPreVisitNotes(Map<String, dynamic> c) {
-    return (c['visitReasons'] != null && (c['visitReasons'] as List).isNotEmpty) ||
-        (c['duration'] != null && (c['duration'] as String).isNotEmpty) ||
-        (c['symptomTrend'] != null && (c['symptomTrend'] as String).isNotEmpty) ||
-        (c['visitGoals'] != null && (c['visitGoals'] as List).isNotEmpty);
-  }
-
-  Widget _buildInfoSection(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 5),
-          Text(content, style: const TextStyle(fontSize: 18)),
-        ],
-      ),
-    );
+    return (c['visitReasons'] != null &&
+            (c['visitReasons'] as List).isNotEmpty) ||
+        (c['duration'] != null &&
+            (c['duration'] as String).isNotEmpty) ||
+        (c['symptomTrend'] != null &&
+            (c['symptomTrend'] as String).isNotEmpty) ||
+        (c['visitGoals'] != null &&
+            (c['visitGoals'] as List).isNotEmpty);
   }
 }

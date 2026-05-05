@@ -16,7 +16,6 @@ class HomeScreen extends StatelessWidget {
       controller.promptProfileUpdate();
       return;
     }
-
     Get.toNamed('/profile');
   }
 
@@ -32,9 +31,8 @@ class HomeScreen extends StatelessWidget {
         title: Obx(() {
           final name = controller.patient.value?.name ?? 'there';
           final firstName = name.split(' ').first;
-          return Text('Hello, $firstName 👋',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 24));
+          return Text('home.greeting'.trParams({'name': firstName}),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24));
         }),
         actions: [
           IconButton(
@@ -72,8 +70,8 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Medical Record Status',
-                        style: TextStyle(
+                    Text('home.medical_status'.tr,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w600)),
@@ -83,8 +81,8 @@ class HomeScreen extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: pct / 100,
                         backgroundColor: Colors.white.withOpacity(0.25),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.white),
                         minHeight: 12,
                       ),
                     ),
@@ -93,7 +91,7 @@ class HomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${pct.toInt()}% Complete',
+                          'home.complete'.trParams({'pct': pct.toInt().toString()}),
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 26,
@@ -103,14 +101,15 @@ class HomeScreen extends StatelessWidget {
                           onPressed: () => Get.toNamed('/edit-profile'),
                           style: TextButton.styleFrom(
                               foregroundColor: Colors.white),
-                          child: const Text('Update →',
-                              style: TextStyle(fontSize: 16)),
+                          child: Text('home.update'.tr,
+                              style: const TextStyle(fontSize: 16)),
                         ),
                       ],
                     ),
                     if (controller.missingFields.isNotEmpty)
                       Text(
-                        'Missing: ${controller.missingFields.take(2).join(', ')}...',
+                        'home.missing'.trParams(
+                            {'fields': controller.missingFields.take(2).join(', ')}),
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 13),
                       ),
@@ -122,8 +121,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             // ── AI Health Chat ──
-            const Text('Your Health Assistant',
-                style: TextStyle(
+            Text('home.health_assistant'.tr,
+                style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E293B))),
@@ -155,19 +154,18 @@ class HomeScreen extends StatelessWidget {
                           color: Color(0xFF1D4ED8), size: 34),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('AI Health Chat',
-                              style: TextStyle(
+                          Text('home.ai_chat'.tr,
+                              style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF0F172A))),
-                          SizedBox(height: 4),
-                          Text(
-                              'Ask about your medications, vitals, or symptoms.',
-                              style: TextStyle(
+                          const SizedBox(height: 4),
+                          Text('home.ai_chat_desc'.tr,
+                              style: const TextStyle(
                                   fontSize: 14, color: Color(0xFF64748B))),
                         ],
                       ),
@@ -185,17 +183,11 @@ class HomeScreen extends StatelessWidget {
                 return const SizedBox.shrink();
               }
               final latest = controller.visitPreps.first;
-              // New format stores IDs in selectedCategories; legacy format
-              // stores labels in visitReasons. Normalise to a list of labels.
               final List<String> reasons;
               if (latest.containsKey('selectedCategories')) {
-                final ids = List<String>.from(latest['selectedCategories'] ?? []);
-                reasons = ids.map((id) {
-                  for (final cat in kVisitTaxonomy) {
-                    if (cat.id == id) return cat.label;
-                  }
-                  return id;
-                }).toList();
+                final ids =
+                    List<String>.from(latest['selectedCategories'] ?? []);
+                reasons = ids.map((id) => 'visit.cat.$id'.tr).toList();
               } else {
                 reasons = List<String>.from(latest['visitReasons'] ?? []);
               }
@@ -209,22 +201,22 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Visit preparations',
-                          style: TextStyle(
+                      Text('home.visit_preps'.tr,
+                          style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E293B))),
                       TextButton(
-                        onPressed: () => Get.to(
-                            () => const VisitPrepHistoryScreen()),
-                        child: Text('See all ($count)'),
+                        onPressed: () =>
+                            Get.to(() => const VisitPrepHistoryScreen()),
+                        child: Text('home.see_all'.trParams({'count': count.toString()})),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   GestureDetector(
-                    onTap: () => Get.to(
-                        () => const VisitPrepHistoryScreen()),
+                    onTap: () =>
+                        Get.to(() => const VisitPrepHistoryScreen()),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -244,8 +236,7 @@ class HomeScreen extends StatelessWidget {
                               Text(
                                 latest['date'] as String? ?? '',
                                 style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF6366F1)),
+                                    fontSize: 13, color: Color(0xFF6366F1)),
                               ),
                             ],
                           ),
@@ -284,8 +275,8 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 8),
-                          const Text('Tap to see all →',
-                              style: TextStyle(
+                          Text('home.tap_see_all'.tr,
+                              style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF6366F1),
                                   fontWeight: FontWeight.w500)),
@@ -300,8 +291,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             // ── Quick Actions ──
-            const Text('Quick Actions',
-                style: TextStyle(
+            Text('home.quick_actions'.tr,
+                style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E293B))),
@@ -316,7 +307,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 _actionCard(
                   Icons.medical_services_rounded,
-                  'Prepare\nVisit',
+                  'home.action.prepare'.tr,
                   const Color(0xFFEEF2FF),
                   const Color(0xFF4338CA),
                   onTap: () => controller.visitPreps.isNotEmpty
@@ -325,28 +316,29 @@ class HomeScreen extends StatelessWidget {
                 ),
                 _actionCard(
                   Icons.mic_rounded,
-                  'Record\nLive Visit',
+                  'home.action.record'.tr,
                   const Color(0xFFFEF2F2),
                   const Color(0xFFDC2626),
-                  onTap: () => Get.to(() => const RecordConsultationScreen()),
+                  onTap: () =>
+                      Get.to(() => const RecordConsultationScreen()),
                 ),
                 _actionCard(
                   Icons.history_rounded,
-                  'Visit\nSummaries',
+                  'home.action.summaries'.tr,
                   const Color(0xFFF0FDF4),
                   const Color(0xFF15803D),
                   onTap: () => Get.toNamed('/history'),
                 ),
                 _actionCard(
                   Icons.assignment_ind_rounded,
-                  'My Health\nProfile',
+                  'home.action.profile'.tr,
                   const Color(0xFFFFF7ED),
                   const Color(0xFFC2410C),
                   onTap: () => _openHealthProfile(controller),
                 ),
                 _actionCard(
                   Icons.medication_rounded,
-                  'Update\nRecord',
+                  'home.action.update'.tr,
                   const Color(0xFFFFFBEB),
                   const Color(0xFFB45309),
                   onTap: () => Get.toNamed('/edit-profile'),

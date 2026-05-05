@@ -12,24 +12,24 @@ class RecordConsultationScreen extends StatefulWidget {
   const RecordConsultationScreen({super.key});
 
   @override
-  State<RecordConsultationScreen> createState() => _RecordConsultationScreenState();
+  State<RecordConsultationScreen> createState() =>
+      _RecordConsultationScreenState();
 }
 
 class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   final SpeechToText _speechToText = SpeechToText();
   final HealthController _healthController = Get.find<HealthController>();
-  
-  String _status = "Initializing...";
+
+  String _status = '';
   bool _hasSpeech = false;
   bool _isListening = false;
   bool _isSummarizing = false;
-  bool _wantsToListen = false; // tracks if user wants continuous listening
+  bool _wantsToListen = false;
   double _soundLevel = 0.0;
   String _currentLocaleId = '';
 
-  // KEY FIX: accumulate words across multiple listen sessions
-  String _allWords = "";
-  String _currentSessionWords = "";
+  String _allWords = '';
+  String _currentSessionWords = '';
 
   bool _isManualMode = false;
   final TextEditingController _manualController = TextEditingController();
@@ -37,6 +37,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   @override
   void initState() {
     super.initState();
+    _status = 'record.ready'.tr;
     _initSpeech();
   }
 
@@ -51,43 +52,40 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     try {
       var status = await Permission.microphone.request();
       if (status.isDenied) {
-        setState(() => _status = "Microphone permission denied.");
+        setState(() => _status = 'record.mic_denied'.tr);
         return;
       }
 
       _hasSpeech = await _speechToText.initialize(
         onError: (error) {
-          print("Speech error: ${error.errorMsg} permanent: ${error.permanent}");
-          // If error is not permanent and user wants to listen, restart
           if (!error.permanent && _wantsToListen) {
             Future.delayed(const Duration(milliseconds: 500), () {
               if (_wantsToListen && mounted) _startListenSession();
             });
           }
-          setState(() => _status = "Restarting...");
+          setState(() => _status = 'record.restarting'.tr);
         },
         onStatus: (status) {
-          print("Speech status: $status");
-          // KEY: when Android stops listening ("notListening" or "done"), 
-          // auto-restart if user still wants to record
-          if ((status == "notListening" || status == "done") && _wantsToListen && mounted) {
+          if ((status == 'notListening' || status == 'done') &&
+              _wantsToListen &&
+              mounted) {
             Future.delayed(const Duration(milliseconds: 300), () {
               if (_wantsToListen && mounted) _startListenSession();
             });
           }
-          setState(() => _status = "Status: $status");
+          setState(() => _status = 'Status: $status');
         },
       );
-      
+
       if (_hasSpeech) {
         var systemLocale = await _speechToText.systemLocale();
         _currentLocaleId = systemLocale?.localeId ?? '';
-        _status = "Ready to record";
+        _status = 'record.ready'.tr;
       } else {
-        _status = "Speech not available on this device.";
+        _status = 'record.no_speech'.tr;
       }
     } catch (e) {
-      _status = "Failed to init: $e";
+      _status = 'Failed to init: $e';
     }
     setState(() {});
   }
@@ -102,7 +100,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     });
   }
 
-  // Start a single listen session (called repeatedly for continuous listening)
   void _startListenSession() async {
     if (!_hasSpeech || !_wantsToListen || !mounted) return;
 
@@ -111,7 +108,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         onResult: (result) {
           setState(() {
             _currentSessionWords = result.recognizedWords;
-            _status = "Listening... (speak naturally)";
+            _status = 'record.listening'.tr;
           });
         },
         onSoundLevelChange: (level) {
@@ -126,8 +123,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       );
       setState(() => _isListening = true);
     } catch (e) {
-      print("Listen error: $e");
-      // Retry after a delay
       if (_wantsToListen && mounted) {
         Future.delayed(const Duration(seconds: 1), () {
           if (_wantsToListen && mounted) _startListenSession();
@@ -136,63 +131,60 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     }
   }
 
-  // User presses the mic button to START continuous recording
   void _startListening() {
     if (!_hasSpeech) {
-      Get.snackbar('Error', 'Microphone not initialized. Check permissions.');
+      Get.snackbar('snackbar.error'.tr, 'record.mic_error'.tr);
       return;
     }
     setState(() {
       _wantsToListen = true;
-      _currentSessionWords = "";
+      _currentSessionWords = '';
     });
     _startListenSession();
   }
 
-  // User presses stop — save accumulated words
   void _stopListening() async {
     _wantsToListen = false;
     await _speechToText.stop();
-    
-    // Append the last session's words
+
     if (_currentSessionWords.isNotEmpty) {
-      _allWords = _allWords.isEmpty 
-          ? _currentSessionWords 
-          : "$_allWords $_currentSessionWords";
-      _currentSessionWords = "";
+      _allWords = _allWords.isEmpty
+          ? _currentSessionWords
+          : '$_allWords $_currentSessionWords';
+      _currentSessionWords = '';
     }
-    
+
     setState(() {
       _isListening = false;
-      _status = _allWords.isEmpty ? "Ready to record" : "Recording saved. Tap Summarize or record more.";
+      _status = _allWords.isEmpty ? 'record.ready'.tr : 'record.saved'.tr;
     });
   }
 
   String get _displayText {
     if (_currentSessionWords.isNotEmpty && _allWords.isNotEmpty) {
-      return "$_allWords $_currentSessionWords";
+      return '$_allWords $_currentSessionWords';
     }
     if (_currentSessionWords.isNotEmpty) return _currentSessionWords;
     return _allWords;
   }
 
   Future<void> _finishAndSummarize() async {
-    // Make sure we capture any in-progress words
     if (_wantsToListen) _stopListening();
-    
-    final textToSummarize = _isManualMode ? _manualController.text : _displayText;
+
+    final textToSummarize =
+        _isManualMode ? _manualController.text : _displayText;
 
     if (textToSummarize.trim().isEmpty) {
-      Get.snackbar('Error', 'No text or speech detected to summarize.');
+      Get.snackbar('snackbar.error'.tr, 'record.no_text'.tr);
       return;
     }
 
     setState(() => _isSummarizing = true);
 
     try {
-      // Derive visit-reason labels from the progressive-disclosure state.
       final visitReasonLabels = kVisitTaxonomy
-          .where((cat) => _healthController.selectedCategories.contains(cat.id))
+          .where((cat) =>
+              _healthController.selectedCategories.contains(cat.id))
           .map((cat) => cat.label)
           .toList();
 
@@ -211,7 +203,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             .doc(user.uid)
             .collection('consultations')
             .add({
-          'doctorName': 'Doctor Visit',
+          'doctorName': 'record.doctor'.tr,
           'date': DateTime.now().toIso8601String().split('T')[0],
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': textToSummarize,
@@ -226,10 +218,10 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         _healthController.clearVisitNotes();
 
         Get.back();
-        Get.snackbar('Success', 'Visit summary saved to history!');
+        Get.snackbar('snackbar.success'.tr, 'record.success'.tr);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to save summary: $e');
+      Get.snackbar('snackbar.error'.tr, 'Failed to save summary: $e');
     } finally {
       setState(() => _isSummarizing = false);
     }
@@ -237,10 +229,11 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentText = _isManualMode ? _manualController.text : _displayText;
-    
+    final currentText =
+        _isManualMode ? _manualController.text : _displayText;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Record Visit')),
+      appBar: AppBar(title: Text('record.title'.tr)),
       body: Padding(
         padding: const EdgeInsets.all(25),
         child: Column(
@@ -250,38 +243,57 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ActionChip(
-                  label: Text(_isManualMode ? "Switch to Mic" : "Switch to Typing"),
-                  avatar: Icon(_isManualMode ? Icons.mic : Icons.keyboard, size: 16),
+                  label: Text(_isManualMode
+                      ? 'record.switch_mic'.tr
+                      : 'record.switch_typing'.tr),
+                  avatar: Icon(
+                      _isManualMode ? Icons.mic : Icons.keyboard,
+                      size: 16),
                   onPressed: _toggleManualMode,
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            
+
             // Status
             if (!_isManualMode) ...[
               if (_wantsToListen)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.red.withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                      Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      const Text('RECORDING', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      Text('record.recording'.tr,
+                          style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2)),
                     ],
                   ),
                 )
               else
-                Text(_status, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(_status,
+                    style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
             ],
             const SizedBox(height: 15),
-            
+
             // Text display area
             Expanded(
               child: Container(
@@ -291,69 +303,87 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: _wantsToListen ? Colors.red.withOpacity(0.3) : Colors.blue.withOpacity(0.1),
+                    color: _wantsToListen
+                        ? Colors.red.withOpacity(0.3)
+                        : Colors.blue.withOpacity(0.1),
                     width: _wantsToListen ? 2 : 1,
                   ),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, spreadRadius: 2)
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        spreadRadius: 2)
                   ],
                 ),
-                child: _isManualMode 
-                  ? TextField(
-                      controller: _manualController,
-                      maxLines: null,
-                      expands: true,
-                      decoration: const InputDecoration(
-                        hintText: "Type or paste your visit notes here...",
-                        border: InputBorder.none,
-                      ),
-                      style: const TextStyle(fontSize: 18, height: 1.5),
-                    )
-                  : SingleChildScrollView(
-                      child: Text(
-                        _displayText.isEmpty ? 'Tap the microphone to start recording.\nSpeak naturally — the app will keep listening.' : _displayText,
-                        style: TextStyle(
-                          fontSize: 18, 
-                          color: _displayText.isEmpty ? Colors.grey : Colors.black,
-                          height: 1.5,
+                child: _isManualMode
+                    ? TextField(
+                        controller: _manualController,
+                        maxLines: null,
+                        expands: true,
+                        decoration: InputDecoration(
+                          hintText: 'record.type_hint'.tr,
+                          border: InputBorder.none,
+                        ),
+                        style:
+                            const TextStyle(fontSize: 18, height: 1.5),
+                      )
+                    : SingleChildScrollView(
+                        child: Text(
+                          _displayText.isEmpty
+                              ? 'record.tap_mic'.tr
+                              : _displayText,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: _displayText.isEmpty
+                                ? Colors.grey
+                                : Colors.black,
+                            height: 1.5,
+                          ),
                         ),
                       ),
-                    ),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Action buttons
             if (_isSummarizing)
-              const Column(
+              Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 10),
-                  Text('AI is summarizing...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 10),
+                  Text('record.summarizing'.tr,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               )
             else
               Column(
                 children: [
-                  // Mic button (only in mic mode)
                   if (!_isManualMode)
                     FloatingActionButton.large(
                       heroTag: 'mic',
-                      onPressed: _wantsToListen ? _stopListening : _startListening,
-                      backgroundColor: _wantsToListen ? Colors.red : Colors.blue,
-                      child: Icon(_wantsToListen ? Icons.stop : Icons.mic, color: Colors.white, size: 36),
+                      onPressed: _wantsToListen
+                          ? _stopListening
+                          : _startListening,
+                      backgroundColor:
+                          _wantsToListen ? Colors.red : Colors.blue,
+                      child: Icon(
+                          _wantsToListen ? Icons.stop : Icons.mic,
+                          color: Colors.white,
+                          size: 36),
                     ),
                   const SizedBox(height: 15),
-                  // Summarize button (always visible when there's text)
                   if (currentText.trim().isNotEmpty && !_wantsToListen)
                     ElevatedButton.icon(
                       onPressed: _finishAndSummarize,
                       icon: const Icon(Icons.auto_awesome_rounded),
-                      label: const Text('Summarize Now', style: TextStyle(fontSize: 18)),
+                      label: Text('record.btn.summarize'.tr,
+                          style: const TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 25, vertical: 15),
                       ),
                     ),
                 ],

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:get/get.dart';
 import '../services/ai_service.dart';
 import '../controllers/health_controller.dart';
-import 'package:get/get.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -26,7 +26,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   void _speak(String text) async {
-    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setLanguage('en-US');
     await _flutterTts.setPitch(1.0);
     await _flutterTts.speak(text);
   }
@@ -41,8 +41,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
     _controller.clear();
 
-    final response = await AiService.askAi(text, _healthController.patient.value);
-    
+    final response =
+        await AiService.askAi(text, _healthController.patient.value);
+
     setState(() {
       _messages.add({'role': 'ai', 'content': response});
       _isLoading = false;
@@ -53,7 +54,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Health Assistant'),
+        title: Text('chat.title'.tr),
         backgroundColor: Colors.white,
         foregroundColor: Colors.blue,
         elevation: 0,
@@ -68,10 +69,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 final msg = _messages[index];
                 final isUser = msg['role'] == 'user';
                 return Column(
-                  crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isUser
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
                     Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isUser
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.all(12),
@@ -81,7 +86,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         ),
                         child: Text(
                           msg['content']!,
-                          style: TextStyle(color: isUser ? Colors.white : Colors.black, fontSize: 16),
+                          style: TextStyle(
+                              color:
+                                  isUser ? Colors.white : Colors.black,
+                              fontSize: 16),
                         ),
                       ),
                     ),
@@ -91,8 +99,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         child: TextButton.icon(
                           onPressed: () => _speak(msg['content']!),
                           icon: const Icon(Icons.volume_up, size: 20),
-                          label: const Text('Listen to Answer'),
-                          style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                          label: Text('chat.listen'.tr),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue),
                         ),
                       ),
                   ],
@@ -113,7 +122,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      hintText: 'Ask about symptoms...',
+                      hintText: 'chat.hint'.tr,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),

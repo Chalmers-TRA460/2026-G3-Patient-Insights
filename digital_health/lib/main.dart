@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
+import 'translations.dart';
 import 'controllers/auth_controller.dart';
+import 'controllers/settings_controller.dart';
 import 'controllers/health_controller.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
@@ -23,6 +25,7 @@ void main() async {
   }
   Get.put(AuthController());
   Get.put(HealthController());
+  Get.put(SettingsController());
   runApp(const HealthApp());
 }
 
@@ -33,6 +36,9 @@ class HealthApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'Health Companion',
+      translations: AppTranslations(),
+      locale: Get.deviceLocale,
+      fallbackLocale: const Locale('en', 'US'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

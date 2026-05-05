@@ -12,11 +12,13 @@ class HealthProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('My Health Profile'),
+        title: Text('profile.title'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.toNamed('/edit-profile'),
-            child: const Text('Edit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('profile.edit'.tr,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -31,21 +33,35 @@ class HealthProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Profile Info
+              // Header
               Row(
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                    child: Text(patient.name[0], style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+                    backgroundColor:
+                        Theme.of(context).primaryColor.withOpacity(0.1),
+                    child: Text(patient.name[0],
+                        style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor)),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(patient.name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                        Text('Age: ${patient.age}  |  Blood: ${patient.bloodType}', style: const TextStyle(fontSize: 18, color: Colors.grey)),
+                        Text(patient.name,
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold)),
+                        Text(
+                            'profile.age_blood'.trParams({
+                              'age': patient.age.toString(),
+                              'blood': patient.bloodType,
+                            }),
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -53,25 +69,35 @@ class HealthProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
 
-              // Vitals Summary Cards
-              const Text('Recent Vital Signs', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              // Vitals
+              Text('profile.vitals'.tr,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 15),
               SizedBox(
                 height: 120,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _buildVitalCard('Blood Pressure', patient.vitals['bp'] ?? '120/80', 'mmHg', Icons.speed_rounded, Colors.blue),
-                    _buildVitalCard('Heart Rate', patient.vitals['hr'] ?? '72', 'bpm', Icons.favorite_rounded, Colors.red),
-                    _buildVitalCard('Glucose', patient.vitals['glucose'] ?? '98', 'mg/dL', Icons.water_drop_rounded, Colors.orange),
-                    _buildVitalCard('Oxygen', patient.vitals['spo2'] ?? '98', '%', Icons.air_rounded, Colors.teal),
+                    _buildVitalCard('profile.bp'.tr,
+                        patient.vitals['bp'] ?? '120/80', 'mmHg',
+                        Icons.speed_rounded, Colors.blue),
+                    _buildVitalCard('profile.hr'.tr,
+                        patient.vitals['hr'] ?? '72', 'bpm',
+                        Icons.favorite_rounded, Colors.red),
+                    _buildVitalCard('profile.glucose'.tr,
+                        patient.vitals['glucose'] ?? '98', 'mg/dL',
+                        Icons.water_drop_rounded, Colors.orange),
+                    _buildVitalCard('profile.oxygen'.tr,
+                        patient.vitals['spo2'] ?? '98', '%',
+                        Icons.air_rounded, Colors.teal),
                   ],
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              // BMI Section
+              // BMI
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -84,59 +110,86 @@ class HealthProfileScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Body Mass Index (BMI)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text('${patient.bmi.toStringAsFixed(1)} - ${patient.bmiStatus}', 
-                            style: TextStyle(fontSize: 22, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                          Text('profile.bmi'.tr,
+                              style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                          Text(
+                              '${patient.bmi.toStringAsFixed(1)} - ${patient.bmiStatus}',
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
-                    const Icon(Icons.monitor_weight_rounded, size: 40, color: Colors.blueGrey),
+                    const Icon(Icons.monitor_weight_rounded,
+                        size: 40, color: Colors.blueGrey),
                   ],
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              _buildSectionHeader('Medical Conditions'),
+              _buildSectionHeader('profile.conditions'.tr),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: patient.conditions.map((c) => Chip(
-                  label: Text(c, style: const TextStyle(fontSize: 16)),
-                  backgroundColor: Colors.blue.withOpacity(0.05),
-                  side: BorderSide(color: Colors.blue.withOpacity(0.2)),
-                )).toList(),
+                children: patient.conditions
+                    .map((c) => Chip(
+                          label: Text(c,
+                              style: const TextStyle(fontSize: 16)),
+                          backgroundColor:
+                              Colors.blue.withOpacity(0.05),
+                          side: BorderSide(
+                              color: Colors.blue.withOpacity(0.2)),
+                        ))
+                    .toList(),
               ),
 
               const SizedBox(height: 30),
 
-              _buildSectionHeader('Current Medications'),
+              _buildSectionHeader('profile.medications'.tr),
               ...patient.medications.map((m) => ListTile(
-                leading: const Icon(Icons.medication_rounded, color: Colors.purple),
-                title: Text(m['name'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                subtitle: Text('${m['dosage']} - ${m['frequency']}', style: const TextStyle(fontSize: 16)),
-              )),
+                    leading: const Icon(Icons.medication_rounded,
+                        color: Colors.purple),
+                    title: Text(m['name'] ?? '',
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                        '${m['dosage']} - ${m['frequency']}',
+                        style: const TextStyle(fontSize: 16)),
+                  )),
 
               const SizedBox(height: 30),
 
-              _buildSectionHeader('Emergency Contact'),
+              _buildSectionHeader('profile.emergency'.tr),
               if (patient.emergencyContact != null)
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.red.withOpacity(0.1)),
+                    border: Border.all(
+                        color: Colors.red.withOpacity(0.1)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.contact_phone_rounded, color: Colors.red, size: 30),
+                      const Icon(Icons.contact_phone_rounded,
+                          color: Colors.red, size: 30),
                       const SizedBox(width: 15),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(patient.emergencyContact!['name'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text(patient.emergencyContact!['phone'] ?? '', style: const TextStyle(fontSize: 16)),
+                          Text(
+                              patient.emergencyContact!['name'] ?? '',
+                              style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                          Text(
+                              patient.emergencyContact!['phone'] ?? '',
+                              style: const TextStyle(fontSize: 16)),
                         ],
                       ),
                     ],
@@ -144,14 +197,12 @@ class HealthProfileScreen extends StatelessWidget {
                 ),
 
               const SizedBox(height: 40),
-              
-              // Link to Visit History
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => Get.toNamed('/history'),
                   icon: const Icon(Icons.history_rounded),
-                  label: const Text('View AI Visit Summaries'),
+                  label: Text('profile.view_summaries'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F172A),
                     foregroundColor: Colors.white,
@@ -166,7 +217,8 @@ class HealthProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVitalCard(String label, String value, String unit, IconData icon, Color color) {
+  Widget _buildVitalCard(String label, String value, String unit,
+      IconData icon, Color color) {
     return Container(
       width: 140,
       margin: const EdgeInsets.only(right: 15),
@@ -181,8 +233,11 @@ class HealthProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
@@ -191,7 +246,9 @@ class HealthProfileScreen extends StatelessWidget {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
-      child: Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+      child: Text(title,
+          style: const TextStyle(
+              fontSize: 22, fontWeight: FontWeight.bold)),
     );
   }
 }
