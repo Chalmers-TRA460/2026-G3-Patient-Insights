@@ -63,13 +63,13 @@ Patient Question: $question
   }
 
   static Future<String> summarizeVisitPrep({
-    List<String> visitReasons = const [],
+    String visitContext = '',
     String duration = '',
     String symptomTrend = '',
     List<String> visitGoals = const [],
   }) async {
     final answers = [
-      if (visitReasons.isNotEmpty) 'Reason for visit: ${visitReasons.join(', ')}',
+      if (visitContext.isNotEmpty) 'Reason for visit:\n$visitContext',
       if (duration.isNotEmpty) 'How long: $duration',
       if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
       if (visitGoals.isNotEmpty) 'What they want from the visit: ${visitGoals.join(', ')}',
