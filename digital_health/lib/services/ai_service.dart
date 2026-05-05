@@ -62,13 +62,71 @@ Patient Question: $question
     }
   }
 
-  static Future<String> summarizeConsultation(
-    String transcript,
-    List<String> symptoms,
-    List<String> questions,
-  ) async {
+  static Future<String> summarizeVisitPrep({
+    List<String> visitReasons = const [],
+    String duration = '',
+    String symptomTrend = '',
+    List<String> visitGoals = const [],
+  }) async {
+    final answers = [
+      if (visitReasons.isNotEmpty) 'Reason for visit: ${visitReasons.join(', ')}',
+      if (duration.isNotEmpty) 'How long: $duration',
+      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
+      if (visitGoals.isNotEmpty) 'What they want from the visit: ${visitGoals.join(', ')}',
+    ].join('\n');
+
     final prompt = '''
-Please summarize this doctor-patient consultation in clear, simple, and reassuring language for an elderly patient.
+A patient has filled in a short pre-appointment questionnaire.
+Write 2–3 warm, plain sentences summarising their situation so they can read it back and confirm it sounds right.
+Use "you" and "your". No medical jargon. Be reassuring.
+
+Questionnaire answers:
+$answers
+''';
+
+    try {
+      final response = await http.post(
+        Uri.parse(_url),
+        headers: {
+          'Authorization': 'Bearer $_apiKey',
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://healthapp.com',
+          'X-Title': 'Elderly Health Companion',
+        },
+        body: jsonEncode({
+          'model': 'nvidia/nemotron-3-super-120b-a12b:free',
+          'messages': [
+            {'role': 'user', 'content': prompt}
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['choices'][0]['message']['content'];
+      }
+      return 'Could not generate summary.';
+    } catch (e) {
+      return 'Error generating summary.';
+    }
+  }
+
+  static Future<String> summarizeConsultation(
+    String transcript, {
+    List<String> visitReasons = const [],
+    String duration = '',
+    String symptomTrend = '',
+    List<String> visitGoals = const [],
+  }) async {
+    final preVisitContext = [
+      if (visitReasons.isNotEmpty) 'Reason for visit: ${visitReasons.join(', ')}',
+      if (duration.isNotEmpty) 'Duration: $duration',
+      if (symptomTrend.isNotEmpty) 'Trend: $symptomTrend',
+      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
+    ].join('\n');
+
+    final prompt = '''
+Please summarize this doctor-patient consultation in clear, simple, and reassuring language for the patient.
 
 Focus on:
 1. What the doctor found
@@ -76,8 +134,8 @@ Focus on:
 3. Next steps and follow-up appointments
 4. Answers to the patient's concerns
 
-Symptoms the patient reported: ${symptoms.join(', ')}
-Questions the patient had: ${questions.join(', ')}
+What the patient prepared before the visit:
+$preVisitContext
 
 Full Consultation Transcript:
 $transcript

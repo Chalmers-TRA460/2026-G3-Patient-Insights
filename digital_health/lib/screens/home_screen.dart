@@ -5,9 +5,19 @@ import 'nutrition_screen.dart';
 import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
 import 'record_consultation_screen.dart';
+import 'visit_prep_history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  void _openHealthProfile(HealthController controller) {
+    if (!controller.canAccessHealthProfile) {
+      controller.promptProfileUpdate();
+      return;
+    }
+
+    Get.toNamed('/profile');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +178,112 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
+            // ── Visit Prep Card ──
+            Obx(() {
+              if (controller.visitPreps.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final latest = controller.visitPreps.first;
+              final reasons =
+                  List<String>.from(latest['visitReasons'] ?? []);
+              final summary = latest['summary'] as String? ?? '';
+              final count = controller.visitPreps.length;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Visit preparations',
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B))),
+                      TextButton(
+                        onPressed: () => Get.to(
+                            () => const VisitPrepHistoryScreen()),
+                        child: Text('See all ($count)'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  GestureDetector(
+                    onTap: () => Get.to(
+                        () => const VisitPrepHistoryScreen()),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFC7D2FE)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.event_note_rounded,
+                                  color: Color(0xFF4338CA), size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                latest['date'] as String? ?? '',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF6366F1)),
+                              ),
+                            ],
+                          ),
+                          if (reasons.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: reasons
+                                  .map((r) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE0E7FF),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(r,
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF4338CA))),
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
+                          if (summary.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              summary,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF3730A3),
+                                  height: 1.5),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          const Text('Tap to see all →',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+
             const SizedBox(height: 30),
 
             // ── Quick Actions ──
@@ -190,7 +306,9 @@ class HomeScreen extends StatelessWidget {
                   'Prepare\nVisit',
                   const Color(0xFFEEF2FF),
                   const Color(0xFF4338CA),
-                  onTap: () => Get.to(() => const PrepareVisitScreen()),
+                  onTap: () => controller.visitPreps.isNotEmpty
+                      ? Get.to(() => const VisitPrepHistoryScreen())
+                      : Get.to(() => const PrepareVisitScreen()),
                 ),
                 _actionCard(
                   Icons.mic_rounded,
@@ -211,7 +329,7 @@ class HomeScreen extends StatelessWidget {
                   'My Health\nProfile',
                   const Color(0xFFFFF7ED),
                   const Color(0xFFC2410C),
-                  onTap: () => Get.toNamed('/profile'),
+                  onTap: () => _openHealthProfile(controller),
                 ),
                 _actionCard(
                   Icons.medication_rounded,

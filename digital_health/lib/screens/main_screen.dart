@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../controllers/health_controller.dart';
 import 'home_screen.dart';
 import 'health_profile_screen.dart';
 import 'consultation_history_screen.dart';
@@ -14,6 +15,16 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+
+  void _openHealthProfile() {
+    final HealthController controller = Get.find<HealthController>();
+    if (!controller.canAccessHealthProfile) {
+      controller.promptProfileUpdate();
+      return;
+    }
+
+    setState(() => _currentIndex = 2);
+  }
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -38,7 +49,14 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) {
+            if (index == 2) {
+              _openHealthProfile();
+              return;
+            }
+
+            setState(() => _currentIndex = index);
+          },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF0066CC),

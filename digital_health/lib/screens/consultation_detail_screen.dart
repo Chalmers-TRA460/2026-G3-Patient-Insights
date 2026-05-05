@@ -90,9 +90,8 @@ class ConsultationDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 25),
 
-            // Patient Concerns
-            if ((consultation['symptoms'] != null && (consultation['symptoms'] as List).isNotEmpty) ||
-                (consultation['questions'] != null && (consultation['questions'] as List).isNotEmpty))
+            // Pre-visit notes
+            if (_hasPreVisitNotes(consultation))
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -108,20 +107,32 @@ class ConsultationDetailScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.assignment_ind_rounded, color: Color(0xFFC2410C)),
                         SizedBox(width: 10),
-                        Text('Patient Concerns', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFC2410C))),
+                        Text('Before the visit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFC2410C))),
                       ],
                     ),
                     const SizedBox(height: 15),
-                    if (consultation['symptoms'] != null && (consultation['symptoms'] as List).isNotEmpty) ...[
-                      const Text('Symptoms Reported:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['visitReasons'] != null && (consultation['visitReasons'] as List).isNotEmpty) ...[
+                      const Text('Reason for visit:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(List<String>.from(consultation['symptoms']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(List<String>.from(consultation['visitReasons']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
                       const SizedBox(height: 12),
                     ],
-                    if (consultation['questions'] != null && (consultation['questions'] as List).isNotEmpty) ...[
-                      const Text('Questions Asked:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                    if (consultation['duration'] != null && (consultation['duration'] as String).isNotEmpty) ...[
+                      const Text('Duration:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
                       const SizedBox(height: 5),
-                      Text(List<String>.from(consultation['questions']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
+                      Text(consultation['duration'] as String, style: const TextStyle(fontSize: 16, height: 1.5)),
+                      const SizedBox(height: 12),
+                    ],
+                    if (consultation['symptomTrend'] != null && (consultation['symptomTrend'] as String).isNotEmpty) ...[
+                      const Text('Getting better or worse:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                      const SizedBox(height: 5),
+                      Text(consultation['symptomTrend'] as String, style: const TextStyle(fontSize: 16, height: 1.5)),
+                      const SizedBox(height: 12),
+                    ],
+                    if (consultation['visitGoals'] != null && (consultation['visitGoals'] as List).isNotEmpty) ...[
+                      const Text('Wanted from visit:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                      const SizedBox(height: 5),
+                      Text(List<String>.from(consultation['visitGoals']).join(', '), style: const TextStyle(fontSize: 16, height: 1.5)),
                     ],
                   ],
                 ),
@@ -131,6 +142,13 @@ class ConsultationDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _hasPreVisitNotes(Map<String, dynamic> c) {
+    return (c['visitReasons'] != null && (c['visitReasons'] as List).isNotEmpty) ||
+        (c['duration'] != null && (c['duration'] as String).isNotEmpty) ||
+        (c['symptomTrend'] != null && (c['symptomTrend'] as String).isNotEmpty) ||
+        (c['visitGoals'] != null && (c['visitGoals'] as List).isNotEmpty);
   }
 
   Widget _buildInfoSection(String title, String content) {
