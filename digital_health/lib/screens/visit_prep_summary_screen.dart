@@ -50,9 +50,11 @@ class VisitPrepSummaryScreen extends StatelessWidget {
                 const Icon(Icons.auto_awesome_rounded,
                     color: Color(0xFF4338CA), size: 20),
                 const SizedBox(width: 8),
-                Text('summary.ai_summary'.tr,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text('summary.ai_summary'.tr,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
             const SizedBox(height: 14),

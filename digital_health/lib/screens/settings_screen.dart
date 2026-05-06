@@ -37,6 +37,38 @@ class SettingsScreen extends StatelessWidget {
 
             const Divider(height: 40),
 
+            // ── Accessibility / Senior Mode ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text('settings.accessibility'.tr,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey)),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SwitchListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                secondary: const Icon(Icons.accessibility_new_rounded,
+                    size: 28, color: Color(0xFF0066CC)),
+                title: Text('settings.accessibility.senior'.tr,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+                subtitle: Text('settings.accessibility.desc'.tr,
+                    style: const TextStyle(fontSize: 13)),
+                value: settings.isAccessibilityMode.value,
+                activeColor: const Color(0xFF0066CC),
+                onChanged: (_) => settings.toggleAccessibilityMode(),
+              ),
+            ),
+
+            const Divider(height: 40),
+
             // ── Language ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.only(bottom: 10),

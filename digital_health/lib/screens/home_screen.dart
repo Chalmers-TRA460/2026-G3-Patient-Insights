@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../models/questionnaire_model.dart';
+import '../widgets/accessible_audio_card.dart';
 import 'nutrition_screen.dart';
 import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
@@ -22,6 +24,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final HealthController controller = Get.find<HealthController>();
+    final SettingsController settings = Get.find<SettingsController>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -90,12 +93,14 @@ class HomeScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'home.complete'.trParams({'pct': pct.toInt().toString()}),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold),
+                        Expanded(
+                          child: Text(
+                            'home.complete'.trParams({'pct': pct.toInt().toString()}),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Get.toNamed('/edit-profile'),
@@ -201,11 +206,13 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('home.visit_preps'.tr,
-                          style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B))),
+                      Expanded(
+                        child: Text('home.visit_preps'.tr,
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B))),
+                      ),
                       TextButton(
                         onPressed: () =>
                             Get.to(() => const VisitPrepHistoryScreen()),
@@ -291,60 +298,102 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             // ── Quick Actions ──
-            Text('home.quick_actions'.tr,
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B))),
-            const SizedBox(height: 14),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1.1,
-              children: [
-                _actionCard(
-                  Icons.medical_services_rounded,
-                  'home.action.prepare'.tr,
-                  const Color(0xFFEEF2FF),
-                  const Color(0xFF4338CA),
-                  onTap: () => controller.visitPreps.isNotEmpty
-                      ? Get.to(() => const VisitPrepHistoryScreen())
-                      : Get.to(() => const PrepareVisitScreen()),
-                ),
-                _actionCard(
-                  Icons.mic_rounded,
-                  'home.action.record'.tr,
-                  const Color(0xFFFEF2F2),
-                  const Color(0xFFDC2626),
-                  onTap: () =>
-                      Get.to(() => const RecordConsultationScreen()),
-                ),
-                _actionCard(
-                  Icons.history_rounded,
-                  'home.action.summaries'.tr,
-                  const Color(0xFFF0FDF4),
-                  const Color(0xFF15803D),
-                  onTap: () => Get.toNamed('/history'),
-                ),
-                _actionCard(
-                  Icons.assignment_ind_rounded,
-                  'home.action.profile'.tr,
-                  const Color(0xFFFFF7ED),
-                  const Color(0xFFC2410C),
-                  onTap: () => _openHealthProfile(controller),
-                ),
-                _actionCard(
-                  Icons.medication_rounded,
-                  'home.action.update'.tr,
-                  const Color(0xFFFFFBEB),
-                  const Color(0xFFB45309),
-                  onTap: () => Get.toNamed('/edit-profile'),
-                ),
-              ],
-            ),
+            Obx(() {
+              final accessible = settings.isAccessibilityMode.value;
+              final labelSize = accessible ? 22.0 : 15.0;
+              final iconSize = accessible ? 56.0 : 42.0;
+
+              Widget card(IconData icon, String translationKey, Color bg,
+                  Color fg, VoidCallback onTap) {
+                final label = translationKey.tr;
+                final inner = Container(
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: iconSize, color: fg),
+                      const SizedBox(height: 12),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: labelSize,
+                            fontWeight: FontWeight.bold,
+                            color: fg.withOpacity(0.85),
+                            height: 1.3),
+                      ),
+                    ],
+                  ),
+                );
+                return AccessibleAudioCard(
+                  speakText: label,
+                  onTap: onTap,
+                  child: inner,
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('home.quick_actions'.tr,
+                      style: TextStyle(
+                          fontSize: accessible ? 30.0 : 22.0,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B))),
+                  const SizedBox(height: 14),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: accessible ? 1.0 : 1.1,
+                    children: [
+                      card(
+                        Icons.medical_services_rounded,
+                        'home.action.prepare',
+                        const Color(0xFFEEF2FF),
+                        const Color(0xFF4338CA),
+                        () => controller.visitPreps.isNotEmpty
+                            ? Get.to(() => const VisitPrepHistoryScreen())
+                            : Get.to(() => const PrepareVisitScreen()),
+                      ),
+                      card(
+                        Icons.mic_rounded,
+                        'home.action.record',
+                        const Color(0xFFFEF2F2),
+                        const Color(0xFFDC2626),
+                        () => Get.to(() => const RecordConsultationScreen()),
+                      ),
+                      card(
+                        Icons.history_rounded,
+                        'home.action.summaries',
+                        const Color(0xFFF0FDF4),
+                        const Color(0xFF15803D),
+                        () => Get.toNamed('/history'),
+                      ),
+                      card(
+                        Icons.assignment_ind_rounded,
+                        'home.action.profile',
+                        const Color(0xFFFFF7ED),
+                        const Color(0xFFC2410C),
+                        () => _openHealthProfile(controller),
+                      ),
+                      card(
+                        Icons.medication_rounded,
+                        'home.action.update',
+                        const Color(0xFFFFFBEB),
+                        const Color(0xFFB45309),
+                        () => Get.toNamed('/edit-profile'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
             const SizedBox(height: 30),
           ],
         ),
@@ -352,32 +401,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionCard(IconData icon, String title, Color bg, Color fg,
-      {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 42, color: fg),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: fg.withOpacity(0.85),
-                  height: 1.3),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

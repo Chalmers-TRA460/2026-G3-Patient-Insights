@@ -34,12 +34,22 @@ class HealthApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SettingsController settings = Get.find<SettingsController>();
     return GetMaterialApp(
       title: 'Health Companion',
       translations: AppTranslations(),
       locale: Get.deviceLocale,
       fallbackLocale: const Locale('en', 'US'),
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => Obx(() {
+        final scale = settings.isAccessibilityMode.value ? 1.4 : 1.0;
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: child!,
+        );
+      }),
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
