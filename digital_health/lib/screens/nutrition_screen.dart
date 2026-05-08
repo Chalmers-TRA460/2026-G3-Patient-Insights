@@ -12,13 +12,16 @@ class NutritionScreen extends StatefulWidget {
 
 class _NutritionScreenState extends State<NutritionScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, String>> _messages = [
-    {
-      'role': 'assistant',
-      'content': 'Hello Margaret! I am your Health Companion. You can ask me anything about your medications, medical conditions, or general health advice. How can I help you today?'
-    }
-  ];
+  late final List<Map<String, String>> _messages;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = [
+      {'role': 'assistant', 'content': 'chat.greeting'.tr},
+    ];
+  }
 
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
@@ -31,7 +34,8 @@ class _NutritionScreenState extends State<NutritionScreen> {
     _messageController.clear();
 
     final healthController = Get.find<HealthController>();
-    String response = await AiService.askAi(userMessage, healthController.patient.value);
+    String response =
+        await AiService.askAi(userMessage, healthController.patient.value);
 
     setState(() {
       _messages.add({'role': 'assistant', 'content': response});
@@ -44,7 +48,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('AI Health Chat'),
+        title: Text('chat.title2'.tr),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
@@ -57,23 +61,33 @@ class _NutritionScreenState extends State<NutritionScreen> {
               itemBuilder: (context, index) {
                 bool isUser = _messages[index]['role'] == 'user';
                 return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 15),
                     padding: const EdgeInsets.all(16),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.8),
                     decoration: BoxDecoration(
-                      color: isUser ? const Color(0xFF0066CC) : Colors.white,
+                      color: isUser
+                          ? const Color(0xFF0066CC)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 5,
+                            offset: const Offset(0, 2)),
                       ],
                     ),
                     child: Text(
                       _messages[index]['content']!,
                       style: TextStyle(
                         fontSize: 18,
-                        color: isUser ? Colors.white : const Color(0xFF1E293B),
+                        color: isUser
+                            ? Colors.white
+                            : const Color(0xFF1E293B),
                         height: 1.4,
                       ),
                     ),
@@ -83,24 +97,32 @@ class _NutritionScreenState extends State<NutritionScreen> {
             ),
           ),
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(10.0),
-              child: Text('Health Companion is thinking...', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Text('chat.thinking'.tr,
+                  style: const TextStyle(
+                      fontStyle: FontStyle.italic, color: Colors.grey)),
             ),
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+            decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                    top: BorderSide(color: Color(0xFFE2E8F0)))),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     decoration: InputDecoration(
-                      hintText: 'Type your question...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                      hintText: 'chat.hint2'.tr,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
                     ),
                     style: const TextStyle(fontSize: 18),
                     onSubmitted: (_) => _sendMessage(),
@@ -111,7 +133,8 @@ class _NutritionScreenState extends State<NutritionScreen> {
                   backgroundColor: const Color(0xFF0066CC),
                   radius: 25,
                   child: IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    icon:
+                        const Icon(Icons.send_rounded, color: Colors.white),
                     onPressed: _sendMessage,
                   ),
                 ),

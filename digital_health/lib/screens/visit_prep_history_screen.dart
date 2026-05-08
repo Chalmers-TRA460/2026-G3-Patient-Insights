@@ -12,11 +12,11 @@ class VisitPrepHistoryScreen extends StatelessWidget {
     final c = Get.find<HealthController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Visit preparations')),
+      appBar: AppBar(title: Text('history.title'.tr)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.to(() => const PrepareVisitScreen()),
         icon: const Icon(Icons.add),
-        label: const Text('New preparation'),
+        label: Text('history.new'.tr),
       ),
       body: Obx(() {
         if (c.visitPreps.isEmpty) {
@@ -27,12 +27,12 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                 Icon(Icons.event_note_rounded,
                     size: 64, color: Colors.grey[300]),
                 const SizedBox(height: 16),
-                const Text('No visit preparations yet',
-                    style: TextStyle(
+                Text('history.empty'.tr,
+                    style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text(
-                  'Fill in the questionnaire before your next appointment.',
+                  'history.empty_desc'.tr,
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   textAlign: TextAlign.center,
                 ),
@@ -53,8 +53,7 @@ class VisitPrepHistoryScreen extends StatelessWidget {
             final summary = prep['summary'] as String? ?? '';
 
             return GestureDetector(
-              onTap: () =>
-                  Get.to(() => VisitPrepSummaryScreen(data: prep)),
+              onTap: () => Get.to(() => VisitPrepSummaryScreen(data: prep)),
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -92,25 +91,25 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.edit_outlined,
                               size: 20, color: Color(0xFF64748B)),
-                          tooltip: 'Edit',
-                          onPressed: () => Get.to(
-                              () => PrepareVisitScreen(editIndex: i)),
+                          tooltip: 'history.edit'.tr,
+                          onPressed: () =>
+                              Get.to(() => PrepareVisitScreen(editIndex: i)),
                         ),
                         IconButton(
                           icon: Icon(Icons.delete_outline_rounded,
                               size: 20, color: Colors.red[400]),
-                          tooltip: 'Delete',
+                          tooltip: 'history.delete'.tr,
                           onPressed: () => showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: const Text('Delete preparation?'),
+                              title: Text('history.delete_title'.tr),
                               content: Text(title.isNotEmpty
-                                  ? 'Delete "$title"?'
-                                  : 'Delete this visit preparation?'),
+                                  ? 'history.delete_named'.trParams({'title': title})
+                                  : 'history.delete_generic'.tr),
                               actions: [
                                 TextButton(
                                     onPressed: () => Get.back(),
-                                    child: const Text('Cancel')),
+                                    child: Text('history.cancel'.tr)),
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red),
@@ -118,7 +117,7 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                                     Get.back();
                                     c.deleteVisitPrep(i);
                                   },
-                                  child: const Text('Delete'),
+                                  child: Text('history.delete'.tr),
                                 ),
                               ],
                             ),
@@ -126,44 +125,43 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                      if (reasons.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: reasons
-                              .map((r) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEEF2FF),
-                                      borderRadius:
-                                          BorderRadius.circular(20),
-                                    ),
-                                    child: Text(r,
-                                        style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF4338CA))),
-                                  ))
-                              .toList(),
-                        ),
-                      ],
-                      if (summary.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          summary,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF475569),
-                              height: 1.5),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    if (reasons.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: reasons
+                            .map((r) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(r,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF4338CA))),
+                                ))
+                            .toList(),
+                      ),
                     ],
-                  ),
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        summary,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF475569),
+                            height: 1.5),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
-              );
+              ),
+            );
           },
         );
       }),

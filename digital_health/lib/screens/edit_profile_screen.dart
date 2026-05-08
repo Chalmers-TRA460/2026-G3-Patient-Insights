@@ -11,7 +11,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final HealthController controller = Get.find<HealthController>();
-  
+
   late TextEditingController _heightController;
   late TextEditingController _weightController;
   late TextEditingController _bloodTypeController;
@@ -22,11 +22,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final p = controller.patient.value;
-    _heightController = TextEditingController(text: p?.height.toString() ?? '');
-    _weightController = TextEditingController(text: p?.weight.toString() ?? '');
-    _bloodTypeController = TextEditingController(text: p?.bloodType ?? '');
-    _bpController = TextEditingController(text: p?.vitals['bp'] ?? '');
-    _glucoseController = TextEditingController(text: p?.vitals['glucose'] ?? '');
+    _heightController =
+        TextEditingController(text: p?.height.toString() ?? '');
+    _weightController =
+        TextEditingController(text: p?.weight.toString() ?? '');
+    _bloodTypeController =
+        TextEditingController(text: p?.bloodType ?? '');
+    _bpController =
+        TextEditingController(text: p?.vitals['bp'] ?? '');
+    _glucoseController =
+        TextEditingController(text: p?.vitals['glucose'] ?? '');
   }
 
   Future<void> _save() async {
@@ -43,31 +48,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     await controller.updatePatientData(data);
     Get.back();
-    Get.snackbar('Success', 'Health profile updated!');
+    Get.snackbar('snackbar.success'.tr, 'edit.success'.tr);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Update Medical Record')),
+      appBar: AppBar(title: Text('edit.title'.tr)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildField('Height (cm)', _heightController, TextInputType.number),
-            _buildField('Weight (kg)', _weightController, TextInputType.number),
-            _buildField('Blood Type', _bloodTypeController, TextInputType.text),
+            _buildField('edit.height'.tr, _heightController,
+                TextInputType.number),
+            _buildField('edit.weight'.tr, _weightController,
+                TextInputType.number),
+            _buildField('edit.blood_type'.tr, _bloodTypeController,
+                TextInputType.text),
             const Divider(height: 40),
-            const Text('Latest Vitals', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('edit.vitals'.tr,
+                style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _buildField('Blood Pressure (e.g. 120/80)', _bpController, TextInputType.text),
-            _buildField('Blood Glucose (mg/dL)', _glucoseController, TextInputType.number),
+            _buildField('edit.bp'.tr, _bpController,
+                TextInputType.text),
+            _buildField('edit.glucose'.tr, _glucoseController,
+                TextInputType.number),
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _save,
-                child: const Text('Save Record'),
+                child: Text('edit.save'.tr),
               ),
             ),
           ],
@@ -76,16 +88,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, TextInputType type) {
+  Widget _buildField(String label, TextEditingController ctrl,
+      TextInputType type) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: TextField(
-        controller: controller,
+        controller: ctrl,
         keyboardType: type,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontSize: 18),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15)),
         ),
         style: const TextStyle(fontSize: 18),
       ),
