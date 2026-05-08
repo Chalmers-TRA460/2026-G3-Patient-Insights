@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import 'edit_profile_screen.dart';
 
 class HealthProfileScreen extends StatelessWidget {
   const HealthProfileScreen({super.key});
@@ -15,7 +17,10 @@ class HealthProfileScreen extends StatelessWidget {
         title: Text('profile.title'.tr),
         actions: [
           TextButton(
-            onPressed: () => Get.toNamed('/edit-profile'),
+            onPressed: () => Get.to(
+                  () => const EditProfileScreen(),
+                  fullscreenDialog: true,
+                ),
             child: Text('profile.edit'.tr,
                 style: const TextStyle(
                     fontSize: 18, fontWeight: FontWeight.bold)),
@@ -27,6 +32,10 @@ class HealthProfileScreen extends StatelessWidget {
         if (patient == null) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        final authName = FirebaseAuth.instance.currentUser?.displayName ?? '';
+        final displayName = authName.isNotEmpty ? authName : (patient.name != 'User' ? patient.name : 'User');
+        final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -40,7 +49,7 @@ class HealthProfileScreen extends StatelessWidget {
                     radius: 40,
                     backgroundColor:
                         Theme.of(context).primaryColor.withOpacity(0.1),
-                    child: Text(patient.name[0],
+                    child: Text(initial,
                         style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -51,7 +60,7 @@ class HealthProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(patient.name,
+                        Text(displayName,
                             style: const TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold)),

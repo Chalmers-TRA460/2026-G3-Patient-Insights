@@ -73,7 +73,7 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'nav.visits'.tr),
             BottomNavigationBarItem(
                 icon: const Icon(Icons.assignment_ind_rounded, size: 28),
-                label: 'nav.records'.tr),
+                label: 'nav.profile'.tr),
             BottomNavigationBarItem(
                 icon: const Icon(Icons.settings_rounded, size: 28),
                 label: 'nav.settings'.tr),

@@ -52,6 +52,7 @@ class HomeScreen extends StatelessWidget {
             // ── Medical Record Completion Card ──
             Obx(() {
               double pct = controller.completionPercentage;
+              if (pct >= 100) return const SizedBox.shrink();
               return Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
@@ -123,7 +124,9 @@ class HomeScreen extends StatelessWidget {
               );
             }),
 
-            const SizedBox(height: 30),
+            Obx(() => controller.completionPercentage >= 100
+                ? const SizedBox.shrink()
+                : const SizedBox(height: 30)),
 
             // ── AI Health Chat ──
             Text('home.health_assistant'.tr,
