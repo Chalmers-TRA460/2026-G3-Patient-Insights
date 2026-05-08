@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/health_controller.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -43,6 +44,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     try {
       await _user?.updateDisplayName(name);
       await _user?.reload();
+      await Get.find<HealthController>().updatePatientData({'name': name});
       Get.snackbar('Updated', 'Display name saved.',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {

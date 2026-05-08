@@ -50,7 +50,7 @@ class AppTranslations extends Translations {
       // ── Bottom navigation ────────────────────────────────────────────────
       'nav.home': 'Home',
       'nav.visits': 'Visits',
-      'nav.records': 'Records',
+      'nav.profile': 'Profile',
       'nav.settings': 'Settings',
 
       // ── Home ─────────────────────────────────────────────────────────────
@@ -225,6 +225,24 @@ class AppTranslations extends Translations {
       'edit.glucose': 'Blood Glucose (mg/dL)',
       'edit.save': 'Save Record',
       'edit.success': 'Health profile updated!',
+      'edit.section.basic': 'Basic Information',
+      'edit.section.measurements': 'Height & Weight',
+      'edit.section.conditions': 'Medical Conditions',
+      'edit.section.medications': 'Medications',
+      'edit.section.emergency': 'Emergency Contact',
+      'edit.dob': 'Date of Birth',
+      'edit.dob.tap': 'Tap to select date',
+      'edit.age': 'Age: @age years',
+      'edit.bmi': 'BMI',
+      'edit.conditions.hint': 'Add a condition...',
+      'edit.conditions.add': 'Add',
+      'edit.med.name': 'Medication name',
+      'edit.med.dosage': 'Dosage',
+      'edit.med.frequency': 'Frequency',
+      'edit.med.add': 'Add medication',
+      'edit.emergency.name': 'Contact name',
+      'edit.emergency.phone': 'Phone number',
+      'edit.cancel': 'Cancel',
 
       // ── AI chat ──────────────────────────────────────────────────────────
       'chat.title': 'AI Health Assistant',
@@ -283,7 +301,7 @@ class AppTranslations extends Translations {
       // ── Bottom navigation ────────────────────────────────────────────────
       'nav.home': 'Hem',
       'nav.visits': 'Besök',
-      'nav.records': 'Journal',
+      'nav.profile': 'Profil',
       'nav.settings': 'Inställningar',
 
       // ── Home ─────────────────────────────────────────────────────────────
@@ -458,6 +476,24 @@ class AppTranslations extends Translations {
       'edit.glucose': 'Blodsocker (mg/dL)',
       'edit.save': 'Spara journal',
       'edit.success': 'Hälsoprofil uppdaterad!',
+      'edit.section.basic': 'Grundläggande information',
+      'edit.section.measurements': 'Längd & vikt',
+      'edit.section.conditions': 'Medicinska tillstånd',
+      'edit.section.medications': 'Mediciner',
+      'edit.section.emergency': 'Nödkontakt',
+      'edit.dob': 'Födelsedatum',
+      'edit.dob.tap': 'Tryck för att välja datum',
+      'edit.age': 'Ålder: @age år',
+      'edit.bmi': 'BMI',
+      'edit.conditions.hint': 'Lägg till ett tillstånd...',
+      'edit.conditions.add': 'Lägg till',
+      'edit.med.name': 'Medicinnamn',
+      'edit.med.dosage': 'Dosering',
+      'edit.med.frequency': 'Frekvens',
+      'edit.med.add': 'Lägg till medicin',
+      'edit.emergency.name': 'Kontaktnamn',
+      'edit.emergency.phone': 'Telefonnummer',
+      'edit.cancel': 'Avbryt',
 
       // ── AI chat ──────────────────────────────────────────────────────────
       'chat.title': 'AI-hälsoassistent',
