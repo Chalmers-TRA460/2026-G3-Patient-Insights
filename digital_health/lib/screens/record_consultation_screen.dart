@@ -56,25 +56,19 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
       _hasSpeech = await _speechToText.initialize(
         onError: (error) {
-          print("Speech error: ${error.errorMsg} permanent: ${error.permanent}");
-          // If error is not permanent and user wants to listen, restart
-          if (!error.permanent && _wantsToListen) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (_wantsToListen && mounted) _startListenSession();
-            });
+          // Permanent errors won't recover. error_busy means a session is
+          // already starting (finalResult already triggered the restart).
+          if (!error.permanent && error.errorMsg != 'error_busy' && _wantsToListen && mounted) {
+            _startListenSession();
           }
-          setState(() => _status = "Restarting...");
         },
         onStatus: (status) {
-          print("Speech status: $status");
-          // KEY: when Android stops listening ("notListening" or "done"), 
-          // auto-restart if user still wants to record
-          if ((status == "notListening" || status == "done") && _wantsToListen && mounted) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (_wantsToListen && mounted) _startListenSession();
-            });
+          // UI only — restart is driven by onResult(finalResult) below.
+          // This is a safety-net for the rare case where the session ends
+          // with no speech at all (no finalResult ever fired).
+          if (status == 'done' && _wantsToListen && mounted && !_speechToText.isListening) {
+            _startListenSession();
           }
-          setState(() => _status = "Status: $status");
         },
       );
       
@@ -101,23 +95,34 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     });
   }
 
-  // Start a single listen session (called repeatedly for continuous listening)
+  // Start a single listen window. Called immediately on button press and
+  // chained from onResult(finalResult) for zero-gap continuous recording.
   void _startListenSession() async {
     if (!_hasSpeech || !_wantsToListen || !mounted) return;
+    if (_speechToText.isListening) return; // already active — onStatus(done) safety-net hit this
 
     try {
       await _speechToText.listen(
         onResult: (result) {
-          setState(() {
-            _currentSessionWords = result.recognizedWords;
-            _status = "Listening... (speak naturally)";
-          });
+          if (!mounted) return;
+          setState(() => _currentSessionWords = result.recognizedWords);
+
+          if (result.finalResult && _wantsToListen) {
+            // Flush completed chunk into the running transcript immediately
+            final chunk = result.recognizedWords;
+            if (chunk.isNotEmpty) {
+              setState(() {
+                _allWords = _allWords.isEmpty ? chunk : '$_allWords $chunk';
+                _currentSessionWords = '';
+              });
+            }
+            // Chain the next window with zero delay
+            _startListenSession();
+          }
         },
-        onSoundLevelChange: (level) {
-          setState(() => _soundLevel = level);
-        },
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
+        onSoundLevelChange: (level) => setState(() => _soundLevel = level),
+        listenFor: const Duration(seconds: 59),
+        pauseFor: const Duration(seconds: 30),
         partialResults: true,
         cancelOnError: false,
         listenMode: ListenMode.dictation,
@@ -125,13 +130,8 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       );
       setState(() => _isListening = true);
     } catch (e) {
-      print("Listen error: $e");
-      // Retry after a delay
-      if (_wantsToListen && mounted) {
-        Future.delayed(const Duration(seconds: 1), () {
-          if (_wantsToListen && mounted) _startListenSession();
-        });
-      }
+      // Immediate retry — no delay, isListening guard prevents loops
+      if (_wantsToListen && mounted) _startListenSession();
     }
   }
 
@@ -148,10 +148,10 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     _startListenSession();
   }
 
-  // User presses stop — save accumulated words
+  // User presses stop — cancel restart loop first, then stop engine
   void _stopListening() async {
-    _wantsToListen = false;
-    await _speechToText.stop();
+    _wantsToListen = false;  // kill restart loop before stop() returns
+    _speechToText.stop();    // fire-and-forget: no need to await
     
     // Append the last session's words
     if (_currentSessionWords.isNotEmpty) {
