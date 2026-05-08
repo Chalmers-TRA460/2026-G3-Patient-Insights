@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../models/questionnaire_model.dart';
 import 'nutrition_screen.dart';
 import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
@@ -184,8 +185,20 @@ class HomeScreen extends StatelessWidget {
                 return const SizedBox.shrink();
               }
               final latest = controller.visitPreps.first;
-              final reasons =
-                  List<String>.from(latest['visitReasons'] ?? []);
+              // New format stores IDs in selectedCategories; legacy format
+              // stores labels in visitReasons. Normalise to a list of labels.
+              final List<String> reasons;
+              if (latest.containsKey('selectedCategories')) {
+                final ids = List<String>.from(latest['selectedCategories'] ?? []);
+                reasons = ids.map((id) {
+                  for (final cat in kVisitTaxonomy) {
+                    if (cat.id == id) return cat.label;
+                  }
+                  return id;
+                }).toList();
+              } else {
+                reasons = List<String>.from(latest['visitReasons'] ?? []);
+              }
               final summary = latest['summary'] as String? ?? '';
               final count = controller.visitPreps.length;
 
