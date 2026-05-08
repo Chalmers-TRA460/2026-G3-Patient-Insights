@@ -353,10 +353,10 @@ class HomeScreen extends StatelessWidget {
                     childAspectRatio: accessible ? 1.0 : 1.1,
                     children: [
                       card(
-                        Icons.medical_services_rounded,
+                        Icons.edit_note_rounded,
                         'home.action.prepare',
-                        const Color(0xFFEEF2FF),
-                        const Color(0xFF4338CA),
+                        Colors.blue.shade50,
+                        Colors.blue.shade800,
                         () => controller.visitPreps.isNotEmpty
                             ? Get.to(() => const VisitPrepHistoryScreen())
                             : Get.to(() => const PrepareVisitScreen()),
@@ -364,29 +364,29 @@ class HomeScreen extends StatelessWidget {
                       card(
                         Icons.mic_rounded,
                         'home.action.record',
-                        const Color(0xFFFEF2F2),
-                        const Color(0xFFDC2626),
+                        Colors.red.shade50,
+                        Colors.red.shade700,
                         () => Get.to(() => const RecordConsultationScreen()),
                       ),
                       card(
                         Icons.history_rounded,
                         'home.action.summaries',
-                        const Color(0xFFF0FDF4),
-                        const Color(0xFF15803D),
+                        Colors.teal.shade50,
+                        Colors.teal.shade800,
                         () => Get.toNamed('/history'),
                       ),
                       card(
                         Icons.assignment_ind_rounded,
                         'home.action.profile',
-                        const Color(0xFFFFF7ED),
-                        const Color(0xFFC2410C),
+                        Colors.deepPurple.shade50,
+                        Colors.deepPurple.shade700,
                         () => _openHealthProfile(controller),
                       ),
                       card(
                         Icons.medication_rounded,
                         'home.action.update',
-                        const Color(0xFFFFFBEB),
-                        const Color(0xFFB45309),
+                        Colors.orange.shade50,
+                        Colors.orange.shade800,
                         () => Get.toNamed('/edit-profile'),
                       ),
                     ],

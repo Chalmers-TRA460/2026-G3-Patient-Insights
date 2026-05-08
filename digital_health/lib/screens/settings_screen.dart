@@ -16,7 +16,7 @@ class SettingsScreen extends StatelessWidget {
     return Obx(() {
       // Subscribing to localeCode causes this entire Scaffold to rebuild
       // whenever the language is switched, so every .tr call re-evaluates.
-      final isSv = settings.localeCode.value == 'sv';
+      final localeCode = settings.localeCode.value;
 
       return Scaffold(
         appBar: AppBar(title: Text('settings.title'.tr)),
@@ -83,21 +83,23 @@ class SettingsScreen extends StatelessWidget {
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
-                children: [
-                  _langOption(
-                    label: 'settings.language.english'.tr,
-                    flag: '🇬🇧',
-                    selected: !isSv,
-                    onTap: () => settings.setLocale('en'),
-                  ),
-                  _langOption(
-                    label: 'settings.language.swedish'.tr,
-                    flag: '🇸🇪',
-                    selected: isSv,
-                    onTap: () => settings.setLocale('sv'),
-                  ),
-                ],
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                leading: Text(
+                  localeCode == 'sv' ? '🇸🇪' : localeCode == 'default' ? '🌐' : '🇬🇧',
+                  style: const TextStyle(fontSize: 28),
+                ),
+                title: Text(
+                  localeCode == 'sv'
+                      ? 'settings.language.swedish'.tr
+                      : localeCode == 'default'
+                          ? 'settings.language.default'.tr
+                          : 'settings.language.english'.tr,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: settings.showLanguageSheet,
               ),
             ),
 
@@ -127,51 +129,6 @@ class SettingsScreen extends StatelessWidget {
         ),
       );
     });
-  }
-
-  Widget _langOption({
-    required String label,
-    required String flag,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(4),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2))
-                  ]
-                : [],
-          ),
-          child: Column(
-            children: [
-              Text(flag, style: const TextStyle(fontSize: 26)),
-              const SizedBox(height: 6),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: selected
-                          ? const Color(0xFF0066CC)
-                          : Colors.grey)),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildSettingTile(IconData icon, String title, {VoidCallback? onTap}) {

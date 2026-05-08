@@ -35,6 +35,8 @@ class AppTranslations extends Translations {
       // ── Settings ─────────────────────────────────────────────────────────
       'settings.title': 'Settings',
       'settings.language': 'Language',
+      'settings.language.sheet_title': 'Select Language',
+      'settings.language.default': 'Default (System language)',
       'settings.language.english': 'English',
       'settings.language.swedish': 'Swedish',
       'settings.accessibility': 'Accessibility',
@@ -266,6 +268,8 @@ class AppTranslations extends Translations {
       // ── Settings ─────────────────────────────────────────────────────────
       'settings.title': 'Inställningar',
       'settings.language': 'Språk',
+      'settings.language.sheet_title': 'Välj språk',
+      'settings.language.default': 'Standard (Systemspråk)',
       'settings.language.english': 'Engelska',
       'settings.language.swedish': 'Svenska',
       'settings.accessibility': 'Tillgänglighet',

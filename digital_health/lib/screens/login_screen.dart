@@ -331,9 +331,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Obx(() {
-                  final isSv = _settings.localeCode.value == 'sv';
+                  final code = _settings.localeCode.value;
+                  final label = code == 'sv' ? 'SV' : code == 'default' ? 'AUTO' : 'EN';
                   return GestureDetector(
-                    onTap: _settings.toggleLocale,
+                    onTap: _settings.showLanguageSheet,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
@@ -350,7 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white, size: 16),
                           const SizedBox(width: 6),
                           Text(
-                            isSv ? 'EN' : 'SV',
+                            label,
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
