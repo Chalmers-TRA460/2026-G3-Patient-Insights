@@ -4,7 +4,7 @@ import '../models/patient_model.dart';
 
 class AiService {
   static const String _apiKey =
-      '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';
+      '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';
   static const String _url =
       'https://openrouter.ai/api/v1/chat/completions';
 

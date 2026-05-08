@@ -58,22 +58,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
       _hasSpeech = await _speechToText.initialize(
         onError: (error) {
-          if (!error.permanent && _wantsToListen) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (_wantsToListen && mounted) _startListenSession();
-            });
+          if (!error.permanent && error.errorMsg != 'error_busy' && _wantsToListen && mounted) {
+            _startListenSession();
           }
-          setState(() => _status = 'record.restarting'.tr);
         },
         onStatus: (status) {
-          if ((status == 'notListening' || status == 'done') &&
-              _wantsToListen &&
-              mounted) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (_wantsToListen && mounted) _startListenSession();
-            });
+          if (status == 'done' && _wantsToListen && mounted && !_speechToText.isListening) {
+            _startListenSession();
           }
-          setState(() => _status = 'Status: $status');
         },
       );
 
@@ -102,20 +94,28 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   void _startListenSession() async {
     if (!_hasSpeech || !_wantsToListen || !mounted) return;
+    if (_speechToText.isListening) return;
 
     try {
       await _speechToText.listen(
         onResult: (result) {
-          setState(() {
-            _currentSessionWords = result.recognizedWords;
-            _status = 'record.listening'.tr;
-          });
+          if (!mounted) return;
+          setState(() => _currentSessionWords = result.recognizedWords);
+
+          if (result.finalResult && _wantsToListen) {
+            final chunk = result.recognizedWords;
+            if (chunk.isNotEmpty) {
+              setState(() {
+                _allWords = _allWords.isEmpty ? chunk : '$_allWords $chunk';
+                _currentSessionWords = '';
+              });
+            }
+            _startListenSession();
+          }
         },
-        onSoundLevelChange: (level) {
-          setState(() => _soundLevel = level);
-        },
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
+        onSoundLevelChange: (level) => setState(() => _soundLevel = level),
+        listenFor: const Duration(seconds: 59),
+        pauseFor: const Duration(seconds: 30),
         partialResults: true,
         cancelOnError: false,
         listenMode: ListenMode.dictation,
@@ -123,11 +123,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       );
       setState(() => _isListening = true);
     } catch (e) {
-      if (_wantsToListen && mounted) {
-        Future.delayed(const Duration(seconds: 1), () {
-          if (_wantsToListen && mounted) _startListenSession();
-        });
-      }
+      if (_wantsToListen && mounted) _startListenSession();
     }
   }
 
@@ -145,7 +141,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   void _stopListening() async {
     _wantsToListen = false;
-    await _speechToText.stop();
+    _speechToText.stop();
 
     if (_currentSessionWords.isNotEmpty) {
       _allWords = _allWords.isEmpty
@@ -238,7 +234,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            // Mode toggle
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -255,7 +250,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             ),
             const SizedBox(height: 10),
 
-            // Status
             if (!_isManualMode) ...[
               if (_wantsToListen)
                 Container(
@@ -294,7 +288,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             ],
             const SizedBox(height: 15),
 
-            // Text display area
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -345,7 +338,6 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Action buttons
             if (_isSummarizing)
               Column(
                 children: [
