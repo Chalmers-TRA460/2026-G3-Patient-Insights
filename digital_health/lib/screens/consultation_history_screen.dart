@@ -6,6 +6,37 @@ import 'consultation_detail_screen.dart';
 class ConsultationHistoryScreen extends StatelessWidget {
   const ConsultationHistoryScreen({super.key});
 
+  void _editTitle(BuildContext context, HealthController c, int index, String current) {
+    final ctrl = TextEditingController(text: current);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit title'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newTitle = ctrl.text.trim();
+              if (newTitle.isNotEmpty) {
+                c.updateConsultation(index, {'doctorName': newTitle});
+              }
+              Get.back();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final HealthController healthController = Get.find<HealthController>();
@@ -35,6 +66,7 @@ class ConsultationHistoryScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             final visit = healthController.consultations[index];
             final date = visit['date'] as String? ?? '';
+            final title = visit['doctorName'] as String? ?? 'consult.general'.tr;
             return Card(
               margin: const EdgeInsets.only(bottom: 15),
               shape: RoundedRectangleBorder(
@@ -42,9 +74,7 @@ class ConsultationHistoryScreen extends StatelessWidget {
               elevation: 2,
               child: ListTile(
                 contentPadding: const EdgeInsets.all(20),
-                title: Text(
-                    visit['doctorName'] as String? ??
-                        'consult.general'.tr,
+                title: Text(title,
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
                 subtitle: Padding(
@@ -55,9 +85,18 @@ class ConsultationHistoryScreen extends StatelessWidget {
                           : 'consult.date'.trParams({'date': 'consult.recent'.tr}),
                       style: const TextStyle(fontSize: 16)),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded),
-                onTap: () => Get.to(
-                    () => ConsultationDetailScreen(consultation: visit)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => _editTitle(context, healthController, index, title),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded),
+                  ],
+                ),
+                onTap: () => Get.to(() => ConsultationDetailScreen(
+                    consultation: visit, index: index)),
               ),
             );
           },
