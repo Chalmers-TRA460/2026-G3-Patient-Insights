@@ -1,67 +1,97 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
 
 class AiService {
-  static const String _apiKey =
-      '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';
-  static const String _url =
+  // OpenRouter key — Nvidia Nemotron summarisation & Q&A
+  static const String _openRouterKey =
+      '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';
+  static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
 
-  static Future<String> askAi(String question, Patient? patient) async {
-    String context = '';
-    if (patient != null) {
-      context = '''
-Patient Context:
-- Name: ${patient.name}
-- Age: ${patient.age}
-- Blood Type: ${patient.bloodType}
-- Conditions: ${patient.conditions.join(', ')}
-- Medications: ${patient.medications.map((m) => "${m['name']} ${m['dosage']}").join(', ')}
-- Vitals: ${patient.vitals.entries.map((e) => "${e.key}: ${e.value}").join(', ')}
-      ''';
-    }
+  // Groq key — Whisper audio transcription (free tier: 7200 s/day)
+  // Get yours free at https://console.groq.com
+  static const String _groqKey = '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';
+  static const String _whisperUrl =
+      'https://api.groq.com/openai/v1/audio/transcriptions';
 
-    final prompt = '''
-You are a compassionate AI Health Companion for an elderly patient.
-Use the patient context below to give safe, clear, and reassuring answers.
-If anything sounds like a medical emergency, tell them to call 911 immediately.
-Use simple English. Avoid medical jargon.
+  // ── 1. Whisper transcription ──────────────────────────────────────────────
+  // Sends the recorded M4A file to Groq Whisper-large-v3 and returns text.
+  static Future<String> transcribeAudio(String filePath) async {
+    final file = File(filePath);
+    if (!file.existsSync()) throw Exception('Audio file not found: $filePath');
 
-$context
+    final request = http.MultipartRequest('POST', Uri.parse(_whisperUrl))
+      ..headers['Authorization'] = 'Bearer $_groqKey'
+      ..fields['model'] = 'whisper-large-v3'
+      ..fields['language'] = 'en'
+      ..fields['response_format'] = 'text'
+      ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
-Patient Question: $question
-''';
+    final streamed = await request.send();
+    final body = await streamed.stream.bytesToString();
 
-    try {
-      final response = await http.post(
-        Uri.parse(_url),
-        headers: {
-          'Authorization': 'Bearer $_apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://healthapp.com',
-          'X-Title': 'Elderly Health Companion',
-        },
-        body: jsonEncode({
-          'model': 'nvidia/nemotron-3-super-120b-a12b:free',
-          'messages': [
-            {'role': 'user', 'content': prompt}
-          ],
-        }),
-      );
-
-      print('AI Response Code: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'];
-      } else {
-        return "I'm having trouble connecting (Error ${response.statusCode}). Please check your API key and try again.";
-      }
-    } catch (e) {
-      return "Connection error. Please check your internet and try again.";
-    }
+    if (streamed.statusCode == 200) return body.trim();
+    throw Exception('Whisper error ${streamed.statusCode}: $body');
   }
 
+  // ── 2. Consultation summarisation ────────────────────────────────────────
+  // Transcript (from Whisper) + patient profile → plain-language summary.
+  static Future<String> summarizeConsultation(
+    String transcript, {
+    Patient? patient,
+    String duration = '',
+    String symptomTrend = '',
+    List<String> visitGoals = const [],
+  }) async {
+    final patientContext = _buildPatientContext(patient);
+
+    final preVisit = [
+      if (duration.isNotEmpty) 'Duration of symptoms: $duration',
+      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
+      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
+    ].join('\n');
+
+    final prompt = '''
+You are a medical communication assistant. A patient just finished a doctor's appointment.
+Summarise the consultation in clear, warm, plain language the patient can easily understand.
+Use "you" and "your". Avoid jargon — explain any medical terms in brackets.
+
+Structure your summary with these four sections:
+1. What the doctor found
+2. Changes to medications or treatment
+3. Next steps and follow-up
+4. Answers to the patient's questions
+
+$patientContext
+${preVisit.isNotEmpty ? 'Pre-visit notes:\n$preVisit\n' : ''}
+Consultation transcript:
+$transcript
+''';
+
+    return _callNemotron(prompt);
+  }
+
+  // ── 3. AI health Q&A ─────────────────────────────────────────────────────
+  static Future<String> askAi(String question, Patient? patient) async {
+    final patientContext = _buildPatientContext(patient);
+
+    final prompt = '''
+You are a compassionate AI Health Companion helping a patient understand their health.
+Use the patient context below to give safe, clear, and reassuring answers.
+If anything sounds like a medical emergency, tell them to call 112 (Sweden) or 911 immediately.
+Use simple language. Explain any medical terms you use.
+
+$patientContext
+
+Patient question: $question
+''';
+
+    return _callNemotron(prompt);
+  }
+
+  // ── 4. Pre-visit summary ─────────────────────────────────────────────────
   static Future<String> summarizeVisitPrep({
     String visitContext = '',
     String duration = '',
@@ -69,86 +99,54 @@ Patient Question: $question
     List<String> visitGoals = const [],
   }) async {
     final answers = [
-      if (visitContext.isNotEmpty) 'Reason for visit:\n$visitContext',
+      if (visitContext.isNotEmpty) 'Symptoms / concerns:\n$visitContext',
       if (duration.isNotEmpty) 'How long: $duration',
       if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
       if (visitGoals.isNotEmpty) 'What they want from the visit: ${visitGoals.join(', ')}',
     ].join('\n');
 
     final prompt = '''
-A patient has filled in a short pre-appointment questionnaire.
-Write 2–3 warm, plain sentences summarising their situation so they can read it back and confirm it sounds right.
+A patient filled in a short pre-appointment questionnaire.
+Write 2–3 warm, plain sentences summarising their situation so they can confirm it sounds right.
 Use "you" and "your". No medical jargon. Be reassuring.
 
 Questionnaire answers:
 $answers
 ''';
 
-    try {
-      final response = await http.post(
-        Uri.parse(_url),
-        headers: {
-          'Authorization': 'Bearer $_apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://healthapp.com',
-          'X-Title': 'Elderly Health Companion',
-        },
-        body: jsonEncode({
-          'model': 'nvidia/nemotron-3-super-120b-a12b:free',
-          'messages': [
-            {'role': 'user', 'content': prompt}
-          ],
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'];
-      }
-      return 'Could not generate summary.';
-    } catch (e) {
-      return 'Error generating summary.';
-    }
+    return _callNemotron(prompt);
   }
 
-  static Future<String> summarizeConsultation(
-    String transcript, {
-    List<String> visitReasons = const [],
-    String duration = '',
-    String symptomTrend = '',
-    List<String> visitGoals = const [],
-  }) async {
-    final preVisitContext = [
-      if (visitReasons.isNotEmpty) 'Reason for visit: ${visitReasons.join(', ')}',
-      if (duration.isNotEmpty) 'Duration: $duration',
-      if (symptomTrend.isNotEmpty) 'Trend: $symptomTrend',
-      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
-    ].join('\n');
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-    final prompt = '''
-Please summarize this doctor-patient consultation in clear, simple, and reassuring language for the patient.
-
-Focus on:
-1. What the doctor found
-2. Any changes to medications or treatments
-3. Next steps and follow-up appointments
-4. Answers to the patient's concerns
-
-What the patient prepared before the visit:
-$preVisitContext
-
-Full Consultation Transcript:
-$transcript
+  static String _buildPatientContext(Patient? p) {
+    if (p == null) return '';
+    final meds = p.medications
+        .map((m) => [m['name'], m['dosage']].where((s) => s != null && s!.isNotEmpty).join(' '))
+        .where((s) => s.isNotEmpty)
+        .join(', ');
+    return '''
+Patient profile:
+- Name: ${p.name}
+- Age: ${p.age > 0 ? '${p.age} years' : 'unknown'}
+- Blood type: ${p.bloodType}
+- Height / Weight: ${p.height > 0 ? '${p.height} cm' : '?'} / ${p.weight > 0 ? '${p.weight} kg' : '?'}
+- BMI: ${p.bmi > 0 ? '${p.bmi.toStringAsFixed(1)} (${p.bmiStatus})' : 'unknown'}
+- Medical conditions: ${p.conditions.isNotEmpty ? p.conditions.join(', ') : 'none recorded'}
+- Current medications: ${meds.isNotEmpty ? meds : 'none recorded'}
+- Vitals: ${p.vitals.isNotEmpty ? p.vitals.entries.map((e) => '${e.key}: ${e.value}').join(', ') : 'none recorded'}
 ''';
+  }
 
+  static Future<String> _callNemotron(String prompt) async {
     try {
       final response = await http.post(
-        Uri.parse(_url),
+        Uri.parse(_openRouterUrl),
         headers: {
-          'Authorization': 'Bearer $_apiKey',
+          'Authorization': 'Bearer $_openRouterKey',
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://healthapp.com',
-          'X-Title': 'Elderly Health Companion',
+          'HTTP-Referer': 'https://patientinsights.chalmers.se',
+          'X-Title': 'Patient Insights',
         },
         body: jsonEncode({
           'model': 'nvidia/nemotron-3-super-120b-a12b:free',
@@ -158,14 +156,13 @@ $transcript
         }),
       );
 
-      print('AI Summary Response Code: ${response.statusCode}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'];
+        return data['choices'][0]['message']['content'] as String;
       }
-      return 'Could not generate summary.';
+      return 'Could not generate response (Error ${response.statusCode}).';
     } catch (e) {
-      return 'Error generating summary.';
+      return 'Connection error. Please check your internet and try again.';
     }
   }
 }
