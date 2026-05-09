@@ -6,7 +6,7 @@ import '../models/patient_model.dart';
 class AiService {
   // OpenRouter key — Nvidia Nemotron summarisation & Q&A
   static const String _openRouterKey =
-      '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';
+      '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';
   static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
 
