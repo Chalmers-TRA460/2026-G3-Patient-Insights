@@ -82,6 +82,26 @@ class HealthController extends GetxController {
     }
   }
 
+  Future<void> updateConsultation(int index, Map<String, dynamic> fields) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final docId = consultations[index]['id'] as String?;
+    if (docId == null) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('consultations')
+          .doc(docId)
+          .update(fields);
+      final updated = List<Map<String, dynamic>>.from(consultations);
+      updated[index] = {...updated[index], ...fields};
+      consultations.value = updated;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update consultation');
+    }
+  }
+
   Future<void> updatePatientData(Map<String, dynamic> data) async {
     final user = _auth.currentUser;
     if (user == null) return;

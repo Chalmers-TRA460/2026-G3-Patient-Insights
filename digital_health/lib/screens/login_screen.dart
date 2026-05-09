@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/settings_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +12,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final AuthController authController = Get.find<AuthController>();
+  final SettingsController _settings = Get.find<SettingsController>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -31,11 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      authController.errorMessage.value = 'Please fill in all fields.';
+      authController.errorMessage.value = 'auth.error.fill_fields'.tr;
       return;
     }
     if (_isRegisterMode && name.isEmpty) {
-      authController.errorMessage.value = 'Please enter your name.';
+      authController.errorMessage.value = 'auth.error.enter_name'.tr;
       return;
     }
 
@@ -49,7 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: Stack(
+        children: [
+          Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF0066CC), Color(0xFF003D7A)],
@@ -75,16 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         size: 60, color: Colors.white),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Health Companion',
-                      style: TextStyle(
+                  Text('app.title'.tr,
+                      style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),
                   const SizedBox(height: 6),
                   Text(
                     _isRegisterMode
-                        ? 'Create your account'
-                        : 'Sign in to continue',
+                        ? 'auth.subtitle.register'.tr
+                        : 'auth.subtitle.login'.tr,
                     style: const TextStyle(fontSize: 17, color: Colors.white70),
                   ),
                   const SizedBox(height: 40),
@@ -110,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _nameController,
                             style: const TextStyle(fontSize: 18),
                             decoration: InputDecoration(
-                              labelText: 'Full Name',
+                              labelText: 'auth.field.name'.tr,
                               prefixIcon: const Icon(Icons.person_outline),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16)),
@@ -125,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(fontSize: 18),
                           decoration: InputDecoration(
-                            labelText: 'Email',
+                            labelText: 'auth.field.email'.tr,
                             prefixIcon: const Icon(Icons.email_outlined),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16)),
@@ -139,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscurePassword,
                           style: const TextStyle(fontSize: 18),
                           decoration: InputDecoration(
-                            labelText: 'Password',
+                            labelText: 'auth.field.password'.tr,
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(_obscurePassword
@@ -162,15 +166,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () {
                                 final email = _emailController.text.trim();
                                 if (email.isEmpty) {
-                                  Get.snackbar('Info',
-                                      'Enter your email first, then tap Forgot Password.',
+                                  Get.snackbar('snackbar.info'.tr,
+                                      'auth.error.enter_email_first'.tr,
                                       snackPosition: SnackPosition.BOTTOM);
                                 } else {
                                   authController.resetPassword(email);
                                 }
                               },
-                              child: const Text('Forgot Password?',
-                                  style: TextStyle(fontSize: 15)),
+                              child: Text('auth.btn.forgot'.tr,
+                                  style: const TextStyle(fontSize: 15)),
                             ),
                           ),
                         ] else
@@ -224,8 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                             strokeWidth: 2.5))
                                     : Text(
                                         _isRegisterMode
-                                            ? 'Create Account'
-                                            : 'Sign In',
+                                            ? 'auth.btn.create_account'.tr
+                                            : 'auth.btn.signin'.tr,
                                         style: const TextStyle(fontSize: 20)),
                               ),
                             )),
@@ -233,16 +237,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 20),
 
                         // Divider
-                        const Row(
+                        Row(
                           children: [
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 15),
-                              child: Text('or',
-                                  style: TextStyle(
+                              padding: const EdgeInsets.symmetric(horizontal: 15),
+                              child: Text('auth.divider.or'.tr,
+                                  style: const TextStyle(
                                       color: Colors.grey, fontSize: 15)),
                             ),
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -254,8 +258,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: authController.signInWithGoogle,
                             icon: const Icon(Icons.g_mobiledata_rounded,
                                 size: 30),
-                            label: const Text('Continue with Google',
-                                style: TextStyle(fontSize: 18)),
+                            label: Text('auth.btn.google'.tr,
+                                style: const TextStyle(fontSize: 18)),
                             style: OutlinedButton.styleFrom(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 16),
@@ -271,8 +275,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Demo mode
                         TextButton(
                           onPressed: () => Get.offAllNamed('/'),
-                          child: const Text('Skip → Continue in Demo Mode',
-                              style: TextStyle(
+                          child: Text('auth.btn.demo'.tr,
+                              style: const TextStyle(
                                   fontSize: 15, color: Colors.grey)),
                         ),
                       ],
@@ -287,8 +291,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         _isRegisterMode
-                            ? 'Already have an account?'
-                            : "Don't have an account?",
+                            ? 'auth.toggle.have_account'.tr
+                            : 'auth.toggle.no_account'.tr,
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 16),
                       ),
@@ -300,7 +304,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           });
                         },
                         child: Text(
-                          _isRegisterMode ? 'Sign In' : 'Register',
+                          _isRegisterMode ? 'auth.btn.signin'.tr : 'auth.btn.register'.tr,
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -311,14 +315,57 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 15),
-                  const Text('Your health data is private and secure.',
-                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  Text('app.privacy'.tr,
+                      style: const TextStyle(color: Colors.white38, fontSize: 13)),
                   const SizedBox(height: 30),
                 ],
               ),
             ),
           ),
         ),
+      ),
+          // ── Language toggle button ──
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Obx(() {
+                  final code = _settings.localeCode.value;
+                  final label = code == 'sv' ? 'SV' : code == 'default' ? 'AUTO' : 'EN';
+                  return GestureDetector(
+                    onTap: _settings.showLanguageSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.language,
+                              color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            label,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

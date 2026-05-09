@@ -64,17 +64,19 @@ class _MainScreenState extends State<MainScreen> {
           selectedLabelStyle: const TextStyle(
               fontWeight: FontWeight.bold, fontSize: 14),
           unselectedLabelStyle: const TextStyle(fontSize: 12),
-          items: const [
+          items: [
             BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded, size: 28), label: 'Home'),
+                icon: const Icon(Icons.home_rounded, size: 28),
+                label: 'nav.home'.tr),
             BottomNavigationBarItem(
-                icon: Icon(Icons.history_rounded, size: 28), label: 'Visits'),
+                icon: const Icon(Icons.history_rounded, size: 28),
+                label: 'nav.visits'.tr),
             BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_ind_rounded, size: 28),
-                label: 'Records'),
+                icon: const Icon(Icons.assignment_ind_rounded, size: 28),
+                label: 'nav.profile'.tr),
             BottomNavigationBarItem(
-                icon: Icon(Icons.settings_rounded, size: 28),
-                label: 'Settings'),
+                icon: const Icon(Icons.settings_rounded, size: 28),
+                label: 'nav.settings'.tr),
           ],
         ),
       ),
