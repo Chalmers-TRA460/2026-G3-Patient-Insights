@@ -385,13 +385,6 @@ class HomeScreen extends StatelessWidget {
                         Colors.deepPurple.shade700,
                         () => _openHealthProfile(controller),
                       ),
-                      card(
-                        Icons.medication_rounded,
-                        'home.action.update',
-                        Colors.orange.shade50,
-                        Colors.orange.shade800,
-                        () => Get.toNamed('/edit-profile'),
-                      ),
                     ],
                   ),
                 ],
