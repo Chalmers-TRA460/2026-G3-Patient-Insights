@@ -19,6 +19,7 @@ class ConsultationDetailScreen extends StatefulWidget {
 
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
+  bool _detailExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +242,9 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
 
               // ── AI Summary Card (conditional) ──
               Builder(builder: (_) {
-                final summary = visit['summary'] as String? ?? '';
+                final briefSummary = visit['briefSummary'] as String? ?? '';
+                final detailedSummary = visit['detailedSummary'] as String? ?? '';
+                final legacySummary = visit['summary'] as String? ?? '';
                 final isGenerating = c.isSummarizingVisit.value;
 
                 if (isGenerating) {
@@ -268,7 +271,104 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   );
                 }
 
-                if (summary.isNotEmpty) {
+                // New dual-level format
+                if (briefSummary.isNotEmpty || detailedSummary.isNotEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF15803D)),
+                            const SizedBox(width: 10),
+                            Text('detail.brief_label'.tr,
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF15803D))),
+                          ],
+                        ),
+                        if (briefSummary.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            briefSummary,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.7,
+                                color: Color(0xFF166534)),
+                          ),
+                        ],
+                        if (detailedSummary.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () => setState(
+                                () => _detailExpanded = !_detailExpanded),
+                            icon: Icon(
+                              _detailExpanded
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              color: const Color(0xFF15803D),
+                            ),
+                            label: Text(
+                              _detailExpanded
+                                  ? 'detail.show_less'.tr
+                                  : 'detail.read_more'.tr,
+                              style: const TextStyle(
+                                  color: Color(0xFF15803D),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: _detailExpanded
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Divider(
+                                          color: Color(0xFFBBF7D0),
+                                          height: 24),
+                                      Text(
+                                        'detail.full_label'.tr,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF15803D),
+                                            letterSpacing: 0.3),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        detailedSummary,
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            height: 1.7,
+                                            color: Color(0xFF166534)),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+
+                // Legacy format (single summary string)
+                if (legacySummary.isNotEmpty) {
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -294,10 +394,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                         ),
                         const SizedBox(height: 15),
                         Text(
-                          summary,
+                          legacySummary,
                           style: const TextStyle(
-                              fontSize: 18,
-                              height: 1.6,
+                              fontSize: 16,
+                              height: 1.7,
                               color: Color(0xFF166534)),
                         ),
                       ],

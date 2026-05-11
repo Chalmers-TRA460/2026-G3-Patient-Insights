@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../controllers/health_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../services/ai_service.dart';
 import 'consultation_detail_screen.dart';
 import 'consultation_history_screen.dart';
@@ -88,7 +89,9 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   Future<void> _transcribeAudio() async {
     if (_audioPath == null) return;
     try {
-      final transcript = await AiService.transcribeAudio(_audioPath!);
+      final langCode = Get.find<SettingsController>().resolvedLanguageCode;
+      final transcript = await AiService.transcribeAudio(_audioPath!,
+          languageCode: langCode);
       _transcriptController.text = transcript;
       setState(() => _stage = _Stage.transcribed);
     } catch (e) {
@@ -134,12 +137,15 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     setState(() => _stage = _Stage.summarizing);
 
     try {
-      final summary = await AiService.summarizeConsultation(
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
+      final result = await AiService.summarizeConsultation(
         text,
         patient: _healthController.patient.value,
         duration: _healthController.duration.value,
         symptomTrend: _healthController.symptomTrend.value,
         visitGoals: _healthController.visitGoals.toList(),
+        targetLanguage: targetLanguage,
       );
 
       final user = FirebaseAuth.instance.currentUser;
@@ -153,7 +159,8 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'date': DateTime.now().toIso8601String().split('T')[0],
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': text,
-          'summary': summary,
+          'briefSummary': result['brief_actionable'] ?? '',
+          'detailedSummary': result['detailed_personalized'] ?? '',
           'duration': _healthController.duration.value,
           'symptomTrend': _healthController.symptomTrend.value,
           'visitGoals': _healthController.visitGoals.toList(),

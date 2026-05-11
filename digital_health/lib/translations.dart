@@ -202,6 +202,10 @@ class AppTranslations extends Translations {
       'detail.wanted': 'Wanted from visit:',
       'detail.generate_summary': 'Generate AI Summary',
       'detail.generating': 'Generating summary…',
+      'detail.brief_label': 'Quick Summary',
+      'detail.full_label': 'Full Summary',
+      'detail.read_more': 'Read full summary',
+      'detail.show_less': 'Show less',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'My Health Profile',
@@ -456,6 +460,10 @@ class AppTranslations extends Translations {
       'detail.wanted': 'Önskat från besöket:',
       'detail.generate_summary': 'Generera AI-sammanfattning',
       'detail.generating': 'Genererar sammanfattning…',
+      'detail.brief_label': 'Snabbsammanfattning',
+      'detail.full_label': 'Fullständig sammanfattning',
+      'detail.read_more': 'Läs hela sammanfattningen',
+      'detail.show_less': 'Visa mindre',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'Min hälsoprofil',

@@ -15,14 +15,15 @@ class AiService {
 
   // ── 1. Whisper transcription ──────────────────────────────────────────────
   // Sends the recorded M4A file to Groq Whisper-large-v3 and returns text.
-  static Future<String> transcribeAudio(String filePath) async {
+  static Future<String> transcribeAudio(String filePath,
+      {String languageCode = 'en'}) async {
     final file = File(filePath);
     if (!file.existsSync()) throw Exception('Audio file not found: $filePath');
 
     final request = http.MultipartRequest('POST', Uri.parse(_whisperUrl))
       ..headers['Authorization'] = 'Bearer $_groqKey'
       ..fields['model'] = 'whisper-large-v3'
-      ..fields['language'] = 'en'
+      ..fields['language'] = languageCode
       ..fields['response_format'] = 'text'
       ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
@@ -34,13 +35,15 @@ class AiService {
   }
 
   // ── 2. Consultation summarisation ────────────────────────────────────────
-  // Transcript (from Whisper) + patient profile → plain-language summary.
-  static Future<String> summarizeConsultation(
+  // Transcript + patient profile → dual-level summary (brief + detailed).
+  // Returns a map with keys 'brief_actionable' and 'detailed_personalized'.
+  static Future<Map<String, String>> summarizeConsultation(
     String transcript, {
     Patient? patient,
     String duration = '',
     String symptomTrend = '',
     List<String> visitGoals = const [],
+    String targetLanguage = 'English',
   }) async {
     final patientContext = _buildPatientContext(patient);
 
@@ -52,10 +55,20 @@ class AiService {
 
     final prompt = '''
 You are a medical communication assistant. A patient just finished a doctor's appointment.
-Summarise the consultation in clear, warm, plain language the patient can easily understand.
-Use "you" and "your". Avoid jargon — explain any medical terms in brackets.
 
-Structure your summary with these four sections:
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these two keys:
+
+{
+  "brief_actionable": "...",
+  "detailed_personalized": "..."
+}
+
+brief_actionable: A scannable bullet list using • bullets containing ONLY:
+1. Medication changes (new, changed, or stopped medications with doses)
+2. Next steps (follow-up appointments, tests, referrals, actions to take at home)
+Readable in under 10 seconds. No explanations or summaries. If there are no changes or next steps, write "• No changes or follow-up needed."
+
+detailed_personalized: A warm, plain-language full summary in $targetLanguage using "you" and "your". Explain medical terms in brackets. Structure with these four sections:
 1. What the doctor found
 2. Changes to medications or treatment
 3. Next steps and follow-up
@@ -67,7 +80,21 @@ Consultation transcript:
 $transcript
 ''';
 
-    return _callNemotron(prompt);
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+      return {
+        'brief_actionable': (decoded['brief_actionable'] as String? ?? '').trim(),
+        'detailed_personalized': (decoded['detailed_personalized'] as String? ?? '').trim(),
+      };
+    } catch (_) {
+      return {'brief_actionable': '', 'detailed_personalized': raw.trim()};
+    }
   }
 
   // ── 3. AI health Q&A ─────────────────────────────────────────────────────
