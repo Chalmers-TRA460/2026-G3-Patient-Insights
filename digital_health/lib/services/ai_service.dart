@@ -1,18 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
 
 class AiService {
-  // OpenRouter key — Nvidia Nemotron summarisation & Q&A
-  static const String _openRouterKey =
-      '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';
+  static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
   static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
 
-  // Groq key — Whisper audio transcription (free tier: 7200 s/day)
-  // Get yours free at https://console.groq.com
-  static const String _groqKey = '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';
+  static String get _groqKey => dotenv.env['GROQ_API_KEY'] ?? '';
   static const String _whisperUrl =
       'https://api.groq.com/openai/v1/audio/transcriptions';
 
