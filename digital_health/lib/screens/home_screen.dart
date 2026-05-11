@@ -49,257 +49,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Medical Record Completion Card ──
-            Obx(() {
-              double pct = controller.completionPercentage;
-              if (pct >= 100) return const SizedBox.shrink();
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0066CC), Color(0xFF004D99)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0066CC).withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('home.medical_status'.tr,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 16),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: pct / 100,
-                        backgroundColor: Colors.white.withOpacity(0.25),
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(Colors.white),
-                        minHeight: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'home.complete'.trParams({'pct': pct.toInt().toString()}),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Get.toNamed('/edit-profile'),
-                          style: TextButton.styleFrom(
-                              foregroundColor: Colors.white),
-                          child: Text('home.update'.tr,
-                              style: const TextStyle(fontSize: 16)),
-                        ),
-                      ],
-                    ),
-                    if (controller.missingFields.isNotEmpty)
-                      Text(
-                        'home.missing'.trParams(
-                            {'fields': controller.missingFields.take(2).join(', ')}),
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
-                      ),
-                  ],
-                ),
-              );
-            }),
-
-            Obx(() => controller.completionPercentage >= 100
-                ? const SizedBox.shrink()
-                : const SizedBox(height: 30)),
-
-            // ── AI Health Chat ──
-            Text('home.health_assistant'.tr,
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B))),
-            const SizedBox(height: 14),
-            GestureDetector(
-              onTap: () => Get.to(() => const AiChatScreen()),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(Icons.auto_awesome_rounded,
-                          color: Color(0xFF1D4ED8), size: 34),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('home.ai_chat'.tr,
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A))),
-                          const SizedBox(height: 4),
-                          Text('home.ai_chat_desc'.tr,
-                              style: const TextStyle(
-                                  fontSize: 14, color: Color(0xFF64748B))),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded,
-                        color: Color(0xFF94A3B8), size: 18),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Visit Prep Card ──
-            Obx(() {
-              if (controller.visitPreps.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              final latest = controller.visitPreps.first;
-              final List<String> reasons;
-              if (latest.containsKey('selectedCategories')) {
-                final ids =
-                    List<String>.from(latest['selectedCategories'] ?? []);
-                reasons = ids.map((id) => 'visit.cat.$id'.tr).toList();
-              } else {
-                reasons = List<String>.from(latest['visitReasons'] ?? []);
-              }
-              final summary = latest['summary'] as String? ?? '';
-              final count = controller.visitPreps.length;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text('home.visit_preps'.tr,
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B))),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Get.to(() => const VisitPrepHistoryScreen()),
-                        child: Text('home.see_all'.trParams({'count': count.toString()})),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  GestureDetector(
-                    onTap: () =>
-                        Get.to(() => const VisitPrepHistoryScreen()),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFC7D2FE)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.event_note_rounded,
-                                  color: Color(0xFF4338CA), size: 22),
-                              const SizedBox(width: 8),
-                              Text(
-                                latest['date'] as String? ?? '',
-                                style: const TextStyle(
-                                    fontSize: 13, color: Color(0xFF6366F1)),
-                              ),
-                            ],
-                          ),
-                          if (reasons.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: reasons
-                                  .map((r) => Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFE0E7FF),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Text(r,
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF4338CA))),
-                                      ))
-                                  .toList(),
-                            ),
-                          ],
-                          if (summary.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              summary,
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF3730A3),
-                                  height: 1.5),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Text('home.tap_see_all'.tr,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF6366F1),
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-
-            const SizedBox(height: 30),
-
             // ── Quick Actions ──
             Obx(() {
               final accessible = settings.isAccessibilityMode.value;
@@ -390,7 +139,259 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             }),
+
             const SizedBox(height: 30),
+
+            // ── Visit Preparations ──
+            Obx(() {
+              if (controller.visitPreps.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final latest = controller.visitPreps.first;
+              final List<String> reasons;
+              if (latest.containsKey('selectedCategories')) {
+                final ids =
+                    List<String>.from(latest['selectedCategories'] ?? []);
+                reasons = ids.map((id) => 'visit.cat.$id'.tr).toList();
+              } else {
+                reasons = List<String>.from(latest['visitReasons'] ?? []);
+              }
+              final summary = latest['summary'] as String? ?? '';
+              final count = controller.visitPreps.length;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text('home.visit_preps'.tr,
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B))),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Get.to(() => const VisitPrepHistoryScreen()),
+                        child: Text('home.see_all'.trParams({'count': count.toString()})),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  GestureDetector(
+                    onTap: () =>
+                        Get.to(() => const VisitPrepHistoryScreen()),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFC7D2FE)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.event_note_rounded,
+                                  color: Color(0xFF4338CA), size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                latest['date'] as String? ?? '',
+                                style: const TextStyle(
+                                    fontSize: 13, color: Color(0xFF6366F1)),
+                              ),
+                            ],
+                          ),
+                          if (reasons.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: reasons
+                                  .map((r) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE0E7FF),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(r,
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF4338CA))),
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
+                          if (summary.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              summary,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF3730A3),
+                                  height: 1.5),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Text('home.tap_see_all'.tr,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ],
+              );
+            }),
+
+            // ── AI Health Chat ──
+            Text('home.health_assistant'.tr,
+                style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B))),
+            const SizedBox(height: 14),
+            GestureDetector(
+              onTap: () => Get.to(() => const AiChatScreen()),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDBEAFE),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.auto_awesome_rounded,
+                          color: Color(0xFF1D4ED8), size: 34),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('home.ai_chat'.tr,
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A))),
+                          const SizedBox(height: 4),
+                          Text('home.ai_chat_desc'.tr,
+                              style: const TextStyle(
+                                  fontSize: 14, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        color: Color(0xFF94A3B8), size: 18),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            // ── Health Profile Completion Card ──
+            Obx(() {
+              double pct = controller.completionPercentage;
+              if (pct >= 100) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0066CC), Color(0xFF004D99)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0066CC).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('home.medical_status'.tr,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: pct / 100,
+                        backgroundColor: Colors.white.withOpacity(0.25),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.white),
+                        minHeight: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'home.complete'.trParams({'pct': pct.toInt().toString()}),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Get.toNamed('/edit-profile'),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.white),
+                          child: Text('home.update'.tr,
+                              style: const TextStyle(fontSize: 16)),
+                        ),
+                      ],
+                    ),
+                    if (controller.missingFields.isNotEmpty)
+                      Text(
+                        'home.missing'.trParams(
+                            {'fields': controller.missingFields.take(2).join(', ')}),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 13),
+                      ),
+                  ],
+                ),
+              );
+            }),
+
+            Obx(() => controller.completionPercentage >= 100
+                ? const SizedBox.shrink()
+                : const SizedBox(height: 30)),
           ],
         ),
       ),

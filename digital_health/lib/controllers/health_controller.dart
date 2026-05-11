@@ -15,6 +15,7 @@ class HealthController extends GetxController {
   Rxn<Patient> patient = Rxn<Patient>();
   RxList<Map<String, dynamic>> consultations = <Map<String, dynamic>>[].obs;
   RxBool isLoading = false.obs;
+  RxBool isSummarizingVisit = false.obs;
 
   // ── Visit preparations ───────────────────────────────────────────────────────
 
@@ -79,6 +80,40 @@ class HealthController extends GetxController {
       consultations.value = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error fetching consultations: $e');
+    }
+  }
+
+  Future<void> saveConsultationTranscript(String transcript) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('consultations')
+        .add({
+      'doctorName': 'record.doctor'.tr,
+      'date': DateTime.now().toIso8601String().split('T')[0],
+      'timestamp': FieldValue.serverTimestamp(),
+      'transcript': transcript,
+      'summary': '',
+    });
+    await fetchConsultations();
+  }
+
+  Future<void> generateSummaryForVisit(int index) async {
+    final transcript = consultations[index]['transcript'] as String? ?? '';
+    if (transcript.isEmpty) return;
+    isSummarizingVisit.value = true;
+    try {
+      final summary = await AiService.summarizeConsultation(
+        transcript,
+        patient: patient.value,
+      );
+      await updateConsultation(index, {'summary': summary});
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to generate summary: $e');
+    } finally {
+      isSummarizingVisit.value = false;
     }
   }
 

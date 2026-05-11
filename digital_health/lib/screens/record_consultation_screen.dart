@@ -10,6 +10,8 @@ import 'package:record/record.dart';
 
 import '../controllers/health_controller.dart';
 import '../services/ai_service.dart';
+import 'consultation_detail_screen.dart';
+import 'consultation_history_screen.dart';
 
 enum _Stage { idle, recording, transcribing, transcribed, summarizing }
 
@@ -101,6 +103,25 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     }
   }
 
+  // ── Save transcript only ──────────────────────────────────────────────────
+
+  Future<void> _saveTranscript() async {
+    final text = _transcriptController.text.trim();
+    if (text.isEmpty) {
+      Get.snackbar('snackbar.error'.tr, 'Transcript is empty.');
+      return;
+    }
+    setState(() => _stage = _Stage.summarizing);
+    try {
+      await _healthController.saveConsultationTranscript(text);
+      _healthController.clearVisitNotes();
+      Get.off(() => const ConsultationHistoryScreen());
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to save: $e');
+      setState(() => _stage = _Stage.transcribed);
+    }
+  }
+
   // ── Nemotron summarisation ────────────────────────────────────────────────
 
   Future<void> _summarize() async {
@@ -142,8 +163,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         _healthController.clearVisitNotes();
       }
 
-      Get.back();
-      Get.snackbar('Saved', 'Visit summary saved to history!');
+      if (_healthController.consultations.isNotEmpty) {
+        Get.off(() => ConsultationDetailScreen(
+              consultation: _healthController.consultations.first,
+              index: 0,
+            ));
+      } else {
+        Get.back();
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to save summary: $e');
       setState(() => _stage = _Stage.transcribed);
@@ -333,13 +360,28 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.auto_awesome_rounded),
-            label: const Text('Summarise with AI',
-                style: TextStyle(fontSize: 18)),
+            label: Text('record.btn.summarize'.tr,
+                style: const TextStyle(fontSize: 18)),
             onPressed: _summarize,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.save_alt_rounded),
+            label: Text('record.btn.save_transcript'.tr,
+                style: const TextStyle(fontSize: 16)),
+            onPressed: _saveTranscript,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.blueGrey,
+              side: const BorderSide(color: Colors.blueGrey),
+              padding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),
