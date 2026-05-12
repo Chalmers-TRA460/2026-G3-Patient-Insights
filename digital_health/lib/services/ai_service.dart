@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
+import '../models/quiz_question_model.dart';
 
 class AiService {
   static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
@@ -149,6 +150,64 @@ Use "you" and "your". No medical jargon. Be precise and reassuring.
 ''';
 
     return _callNemotron(prompt);
+  }
+
+  // ── 5. Knowledge-check quiz ───────────────────────────────────────────────
+  // Transcript + patient profile → list of quiz questions (5 items).
+  static Future<List<QuizQuestion>> generateVisitQuiz(
+    String transcript, {
+    Patient? patient,
+    String targetLanguage = 'English',
+  }) async {
+    final patientContext = _buildPatientContext(patient);
+
+    final prompt = '''
+You are a medical education assistant helping a patient check what they understood from their doctor's visit.
+
+Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly 5 objects.
+
+Each object must have exactly these four keys:
+{
+  "question": "...",
+  "options": ["...", "...", "...", "..."],
+  "correctIndex": 0,
+  "explanation": "..."
+}
+
+STRICT GROUNDING RULE (mandatory):
+For any question about medications, dosages, next steps, tests, or follow-up appointments, you MUST base the question ONLY on information explicitly spoken in the transcript. If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details. Never substitute standard medical timelines or typical clinical practice for what was actually said.
+
+LIFESTYLE FLEXIBILITY (limited exception):
+You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+
+Additional rules:
+- Each question must have exactly 4 options.
+- correctIndex is the zero-based index of the correct option.
+- explanation is 1–2 sentences in plain language.
+- Do NOT ask about diagnoses or test results — only actionable items the patient must remember.
+- Write all text in $targetLanguage.
+
+$patientContext
+Consultation transcript:
+$transcript
+''';
+
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(QuizQuestion.fromJson)
+          .where((q) => q.question.isNotEmpty && q.options.length >= 2)
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

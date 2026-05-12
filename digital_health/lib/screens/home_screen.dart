@@ -8,6 +8,7 @@ import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
 import 'record_consultation_screen.dart';
 import 'visit_prep_history_screen.dart';
+import 'quiz_history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,13 @@ class HomeScreen extends StatelessWidget {
                         Colors.deepPurple.shade50,
                         Colors.deepPurple.shade700,
                         () => _openHealthProfile(controller),
+                      ),
+                      card(
+                        Icons.quiz_rounded,
+                        'home.action.quiz',
+                        Colors.amber.shade50,
+                        Colors.amber.shade800,
+                        () => Get.to(() => const QuizHistoryScreen()),
                       ),
                     ],
                   ),

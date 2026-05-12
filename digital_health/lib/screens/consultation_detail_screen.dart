@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../controllers/settings_controller.dart';
+import '../models/quiz_question_model.dart';
+import '../services/ai_service.dart';
+import 'quiz_screen.dart';
 
 class ConsultationDetailScreen extends StatefulWidget {
   final Map<String, dynamic> consultation;
@@ -20,6 +24,7 @@ class ConsultationDetailScreen extends StatefulWidget {
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
   bool _detailExpanded = false;
+  bool _isGeneratingQuiz = false;
 
   @override
   Widget build(BuildContext context) {
@@ -433,12 +438,109 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // ── Test My Knowledge ──
+              Builder(builder: (_) {
+                final transcript = visit['transcript'] as String? ?? '';
+                if (transcript.isEmpty) return const SizedBox.shrink();
+
+                final storedQuiz = visit['quiz'] as List?;
+                final hasQuiz =
+                    storedQuiz != null && storedQuiz.isNotEmpty;
+
+                if (_isGeneratingQuiz) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(
+                            color: Color(0xFFD97706)),
+                        const SizedBox(height: 14),
+                        Text('quiz.generating'.tr,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF92400E))),
+                      ],
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: Icon(hasQuiz
+                        ? Icons.play_arrow_rounded
+                        : Icons.quiz_rounded),
+                    label: Text(
+                        hasQuiz
+                            ? 'quiz.take'.tr
+                            : 'detail.test_knowledge'.tr,
+                        style: const TextStyle(fontSize: 17)),
+                    onPressed: () => hasQuiz
+                        ? _openStoredQuiz(storedQuiz!)
+                        : _generateQuiz(c, transcript),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                );
+              }),
+
               const SizedBox(height: 40),
             ],
           ),
         );
       }),
     );
+  }
+
+  void _openStoredQuiz(List raw) {
+    final questions = raw
+        .whereType<Map<String, dynamic>>()
+        .map(QuizQuestion.fromJson)
+        .where((q) => q.question.isNotEmpty && q.options.length >= 2)
+        .toList();
+    if (questions.isNotEmpty) {
+      Get.to(() => QuizScreen(questions: questions));
+    }
+  }
+
+  Future<void> _generateQuiz(HealthController c, String transcript) async {
+    setState(() => _isGeneratingQuiz = true);
+    try {
+      final lang = Get.find<SettingsController>().resolvedLanguageName;
+      final questions = await AiService.generateVisitQuiz(
+        transcript,
+        patient: c.patient.value,
+        targetLanguage: lang,
+      );
+      if (questions.isEmpty) {
+        Get.snackbar('quiz.title'.tr, 'quiz.empty'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      await c.updateConsultation(widget.index, {
+        'quiz': questions.map((q) => q.toJson()).toList(),
+      });
+      Get.to(() => QuizScreen(questions: questions));
+    } catch (e) {
+      Get.snackbar('quiz.title'.tr, 'quiz.error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      setState(() => _isGeneratingQuiz = false);
+    }
   }
 
   void _pickVisitPrep(

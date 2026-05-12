@@ -71,6 +71,7 @@ class AppTranslations extends Translations {
       'home.action.summaries': 'Visit\nSummaries',
       'home.action.profile': 'My Health\nProfile',
       'home.action.update': 'Update\nRecord',
+      'home.action.quiz': 'Test My\nKnowledge',
 
       // ── Prepare visit ────────────────────────────────────────────────────
       'prep.title.edit': 'Edit preparation',
@@ -166,6 +167,25 @@ class AppTranslations extends Translations {
       'record.success': 'Visit summary saved to history!',
       'record.doctor': 'Doctor Visit',
 
+      // ── Knowledge quiz ───────────────────────────────────────────────────
+      'quiz.title': 'Knowledge Check',
+      'quiz.question_of': 'Question @current of @total',
+      'quiz.correct': 'Correct!',
+      'quiz.incorrect': 'Incorrect',
+      'quiz.next': 'Next Question',
+      'quiz.finish': 'Finish',
+      'quiz.result_title': 'Quiz Complete!',
+      'quiz.result_score': 'You scored @score out of @total',
+      'quiz.back': 'Back to Summary',
+      'quiz.retry': 'Try Again',
+      'quiz.generating': 'Generating quiz…',
+      'quiz.error': 'Could not generate quiz. Please try again.',
+      'quiz.empty': 'Not enough information to generate a quiz.',
+      'quiz.take': 'Take Quiz',
+      'quiz.n_questions': '@count questions',
+      'quiz.history_empty': 'No quizzes yet',
+      'quiz.history_empty_desc': 'Open a past visit and tap "Test My Knowledge" to create your first quiz.',
+
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Past Visits',
       'consult.empty': 'No visit history yet.',
@@ -192,6 +212,7 @@ class AppTranslations extends Translations {
       'detail.full_label': 'Full Summary',
       'detail.read_more': 'Read full summary',
       'detail.show_less': 'Show less',
+      'detail.test_knowledge': 'Test My Knowledge',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'My Health Profile',
@@ -315,6 +336,7 @@ class AppTranslations extends Translations {
       'home.action.summaries': 'Besöks-\nSammanfattningar',
       'home.action.profile': 'Min Hälso-\nProfil',
       'home.action.update': 'Uppdatera\nJournalen',
+      'home.action.quiz': 'Testa min\nkunskap',
 
       // ── Prepare visit ────────────────────────────────────────────────────
       'prep.title.edit': 'Redigera förberedelse',
@@ -410,6 +432,25 @@ class AppTranslations extends Translations {
       'record.success': 'Besökssammanfattning sparad!',
       'record.doctor': 'Läkarbesök',
 
+      // ── Knowledge quiz ───────────────────────────────────────────────────
+      'quiz.title': 'Kunskapskontroll',
+      'quiz.question_of': 'Fråga @current av @total',
+      'quiz.correct': 'Rätt!',
+      'quiz.incorrect': 'Fel',
+      'quiz.next': 'Nästa fråga',
+      'quiz.finish': 'Avsluta',
+      'quiz.result_title': 'Quiz klart!',
+      'quiz.result_score': 'Du fick @score av @total rätt',
+      'quiz.back': 'Tillbaka till sammanfattningen',
+      'quiz.retry': 'Försök igen',
+      'quiz.generating': 'Genererar quiz…',
+      'quiz.error': 'Kunde inte generera quiz. Försök igen.',
+      'quiz.empty': 'Inte tillräckligt med information för att generera ett quiz.',
+      'quiz.take': 'Ta quiz',
+      'quiz.n_questions': '@count frågor',
+      'quiz.history_empty': 'Inga quiz ännu',
+      'quiz.history_empty_desc': 'Öppna ett tidigare besök och tryck "Testa min kunskap" för att skapa ditt första quiz.',
+
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Tidigare besök',
       'consult.empty': 'Ingen besökshistorik ännu.',
@@ -436,6 +477,7 @@ class AppTranslations extends Translations {
       'detail.full_label': 'Fullständig sammanfattning',
       'detail.read_more': 'Läs hela sammanfattningen',
       'detail.show_less': 'Visa mindre',
+      'detail.test_knowledge': 'Testa min kunskap',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'Min hälsoprofil',
