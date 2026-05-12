@@ -19,6 +19,7 @@ class ConsultationDetailScreen extends StatefulWidget {
 
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
+  bool _detailExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -239,41 +240,189 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
               ),
               const SizedBox(height: 25),
 
-              // ── AI Summary Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              // ── AI Summary Card (conditional) ──
+              Builder(builder: (_) {
+                final briefSummary = visit['briefSummary'] as String? ?? '';
+                final detailedSummary = visit['detailedSummary'] as String? ?? '';
+                final legacySummary = visit['summary'] as String? ?? '';
+                final isGenerating = c.isSummarizingVisit.value;
+
+                if (isGenerating) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
                       children: [
-                        const Icon(Icons.auto_awesome_rounded,
+                        const CircularProgressIndicator(
                             color: Color(0xFF15803D)),
-                        const SizedBox(width: 10),
-                        Text('detail.ai_summary'.tr,
+                        const SizedBox(height: 16),
+                        Text('detail.generating'.tr,
                             style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                                 color: Color(0xFF15803D))),
                       ],
                     ),
-                    const SizedBox(height: 15),
-                    Text(
-                      visit['summary'] as String? ?? 'detail.no_summary'.tr,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          height: 1.6,
-                          color: Color(0xFF166534)),
+                  );
+                }
+
+                // New dual-level format
+                if (briefSummary.isNotEmpty || detailedSummary.isNotEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
                     ),
-                  ],
-                ),
-              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF15803D)),
+                            const SizedBox(width: 10),
+                            Text('detail.brief_label'.tr,
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF15803D))),
+                          ],
+                        ),
+                        if (briefSummary.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            briefSummary,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.7,
+                                color: Color(0xFF166534)),
+                          ),
+                        ],
+                        if (detailedSummary.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () => setState(
+                                () => _detailExpanded = !_detailExpanded),
+                            icon: Icon(
+                              _detailExpanded
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              color: const Color(0xFF15803D),
+                            ),
+                            label: Text(
+                              _detailExpanded
+                                  ? 'detail.show_less'.tr
+                                  : 'detail.read_more'.tr,
+                              style: const TextStyle(
+                                  color: Color(0xFF15803D),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: _detailExpanded
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Divider(
+                                          color: Color(0xFFBBF7D0),
+                                          height: 24),
+                                      Text(
+                                        'detail.full_label'.tr,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF15803D),
+                                            letterSpacing: 0.3),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        detailedSummary,
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            height: 1.7,
+                                            color: Color(0xFF166534)),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+
+                // Legacy format (single summary string)
+                if (legacySummary.isNotEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF15803D)),
+                            const SizedBox(width: 10),
+                            Text('detail.ai_summary'.tr,
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF15803D))),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        Text(
+                          legacySummary,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.7,
+                              color: Color(0xFF166534)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: Text('detail.generate_summary'.tr,
+                        style: const TextStyle(fontSize: 17)),
+                    onPressed: () => c.generateSummaryForVisit(widget.index),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF15803D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                );
+              }),
+
               const SizedBox(height: 25),
 
               // ── Full Conversation Card ──

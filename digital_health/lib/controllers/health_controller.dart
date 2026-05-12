@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
 import '../models/questionnaire_model.dart';
 import '../services/ai_service.dart';
+import 'settings_controller.dart';
 
 class HealthController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,6 +16,7 @@ class HealthController extends GetxController {
   Rxn<Patient> patient = Rxn<Patient>();
   RxList<Map<String, dynamic>> consultations = <Map<String, dynamic>>[].obs;
   RxBool isLoading = false.obs;
+  RxBool isSummarizingVisit = false.obs;
 
   // ── Visit preparations ───────────────────────────────────────────────────────
 
@@ -79,6 +81,46 @@ class HealthController extends GetxController {
       consultations.value = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error fetching consultations: $e');
+    }
+  }
+
+  Future<void> saveConsultationTranscript(String transcript) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('consultations')
+        .add({
+      'doctorName': 'record.doctor'.tr,
+      'date': DateTime.now().toIso8601String().split('T')[0],
+      'timestamp': FieldValue.serverTimestamp(),
+      'transcript': transcript,
+      'summary': '',
+    });
+    await fetchConsultations();
+  }
+
+  Future<void> generateSummaryForVisit(int index) async {
+    final transcript = consultations[index]['transcript'] as String? ?? '';
+    if (transcript.isEmpty) return;
+    isSummarizingVisit.value = true;
+    try {
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
+      final result = await AiService.summarizeConsultation(
+        transcript,
+        patient: patient.value,
+        targetLanguage: targetLanguage,
+      );
+      await updateConsultation(index, {
+        'briefSummary': result['brief_actionable'] ?? '',
+        'detailedSummary': result['detailed_personalized'] ?? '',
+      });
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to generate summary: $e');
+    } finally {
+      isSummarizingVisit.value = false;
     }
   }
 

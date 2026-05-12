@@ -175,7 +175,8 @@ class AppTranslations extends Translations {
       'record.saved': 'Recording saved. Tap Summarize or record more.',
       'record.no_text': 'No text or speech detected to summarize.',
       'record.summarizing': 'AI is summarizing...',
-      'record.btn.summarize': 'Summarize Now',
+      'record.btn.summarize': 'Summarise with AI',
+      'record.btn.save_transcript': 'Save Transcript Only',
       'record.success': 'Visit summary saved to history!',
       'record.doctor': 'Doctor Visit',
 
@@ -199,6 +200,12 @@ class AppTranslations extends Translations {
       'detail.duration': 'Duration:',
       'detail.trend': 'Getting better or worse:',
       'detail.wanted': 'Wanted from visit:',
+      'detail.generate_summary': 'Generate AI Summary',
+      'detail.generating': 'Generating summary…',
+      'detail.brief_label': 'Quick Summary',
+      'detail.full_label': 'Full Summary',
+      'detail.read_more': 'Read full summary',
+      'detail.show_less': 'Show less',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'My Health Profile',
@@ -426,7 +433,8 @@ class AppTranslations extends Translations {
       'record.saved': 'Inspelning sparad. Tryck Sammanfatta eller spela in mer.',
       'record.no_text': 'Ingen text eller tal att sammanfatta.',
       'record.summarizing': 'AI sammanfattar...',
-      'record.btn.summarize': 'Sammanfatta nu',
+      'record.btn.summarize': 'Sammanfatta med AI',
+      'record.btn.save_transcript': 'Spara transkript',
       'record.success': 'Besökssammanfattning sparad!',
       'record.doctor': 'Läkarbesök',
 
@@ -450,6 +458,12 @@ class AppTranslations extends Translations {
       'detail.duration': 'Varaktighet:',
       'detail.trend': 'Bättre eller sämre:',
       'detail.wanted': 'Önskat från besöket:',
+      'detail.generate_summary': 'Generera AI-sammanfattning',
+      'detail.generating': 'Genererar sammanfattning…',
+      'detail.brief_label': 'Snabbsammanfattning',
+      'detail.full_label': 'Fullständig sammanfattning',
+      'detail.read_more': 'Läs hela sammanfattningen',
+      'detail.show_less': 'Visa mindre',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'Min hälsoprofil',

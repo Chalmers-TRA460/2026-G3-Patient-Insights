@@ -73,7 +73,6 @@ users/{uid}
 
  ## Known Issues
 
-- API keys (OpenRouter, Google client ID) are hardcoded in source — do not add new secrets this way.
-- `test/widget_test.dart` references a non-existent `MyApp` class; tests will not pass without fixing this.
+
 - `lib/screens/nutrition_screen.dart` appears to be an unused duplicate of `ai_chat_screen.dart`.
   - No logging framework — `print()` is used throughout
