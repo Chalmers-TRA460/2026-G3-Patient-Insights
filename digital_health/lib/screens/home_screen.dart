@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
 import '../controllers/settings_controller.dart';
-import '../models/questionnaire_model.dart';
 import '../widgets/accessible_audio_card.dart';
 import 'nutrition_screen.dart';
 import 'ai_chat_screen.dart';
@@ -149,13 +148,18 @@ class HomeScreen extends StatelessWidget {
               }
               final latest = controller.visitPreps.first;
               final List<String> reasons;
-              if (latest.containsKey('selectedCategories')) {
-                final ids =
-                    List<String>.from(latest['selectedCategories'] ?? []);
+              if (latest.containsKey('questions')) {
+                reasons =
+                    List<String>.from(latest['questions'] ?? const []);
+              } else if (latest.containsKey('selectedCategories')) {
+                final ids = List<String>.from(
+                    latest['selectedCategories'] ?? const []);
                 reasons = ids.map((id) => 'visit.cat.$id'.tr).toList();
               } else {
-                reasons = List<String>.from(latest['visitReasons'] ?? []);
+                reasons =
+                    List<String>.from(latest['visitReasons'] ?? const []);
               }
+              final title = latest['title'] as String? ?? '';
               final summary = latest['summary'] as String? ?? '';
               final count = controller.visitPreps.length;
 
@@ -206,6 +210,18 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                          if (title.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                           if (reasons.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             Wrap(
@@ -220,10 +236,14 @@ class HomeScreen extends StatelessWidget {
                                           borderRadius:
                                               BorderRadius.circular(20),
                                         ),
-                                        child: Text(r,
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF4338CA))),
+                                        child: Text(
+                                          r,
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF4338CA)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ))
                                   .toList(),
                             ),

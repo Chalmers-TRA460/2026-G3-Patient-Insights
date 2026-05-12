@@ -153,56 +153,28 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    if ((linkedPrep['selectedCategories'] as List? ?? [])
+                                    if ((linkedPrep['questions'] as List? ?? [])
                                         .isNotEmpty) ...[
                                       const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.what_brings'.tr),
+                                      _sectionLabel('summary.questions'.tr),
                                       const SizedBox(height: 6),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: List<String>.from(
-                                                linkedPrep['selectedCategories'])
-                                            .map((id) => _prepChip(
-                                                'visit.cat.$id'.tr))
-                                            .toList(),
-                                      ),
-                                    ],
-                                    if ((linkedPrep['duration'] as String? ?? '')
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.how_long'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(linkedPrep['duration'] as String,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              color: Color(0xFF9A3412),
-                                              height: 1.5)),
-                                    ],
-                                    if ((linkedPrep['symptomTrend'] as String? ?? '')
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.trend'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(linkedPrep['symptomTrend'] as String,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              color: Color(0xFF9A3412),
-                                              height: 1.5)),
-                                    ],
-                                    if ((linkedPrep['visitGoals'] as List? ?? [])
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.goals'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        List<String>.from(linkedPrep['visitGoals'])
-                                            .join(', '),
-                                        style: const TextStyle(
-                                            fontSize: 15,
-                                            color: Color(0xFF9A3412),
-                                            height: 1.5),
-                                      ),
+                                      ...List<String>.from(
+                                              linkedPrep['questions'])
+                                          .asMap()
+                                          .entries
+                                          .map((e) => Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                        bottom: 4),
+                                                child: Text(
+                                                  '${e.key + 1}. ${e.value}',
+                                                  style: const TextStyle(
+                                                      fontSize: 15,
+                                                      color: Color(
+                                                          0xFF9A3412),
+                                                      height: 1.5),
+                                                ),
+                                              )),
                                     ],
                                   ] else ...[
                                     OutlinedButton.icon(
@@ -575,20 +547,5 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
     );
   }
 
-  Widget _prepChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEDD5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFED7AA)),
-      ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF9A3412))),
-    );
-  }
 
 }
