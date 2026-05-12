@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/health_controller.dart';
 import '../models/questionnaire_model.dart';
 
 class VisitPrepSummaryScreen extends StatelessWidget {
-  final Map<String, dynamic>? data;
-  const VisitPrepSummaryScreen({super.key, this.data});
+  final Map<String, dynamic> data;
+  const VisitPrepSummaryScreen({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<HealthController>();
-
-    final title = data?['title'] as String? ?? c.visitTitle.value;
-    final date = data?['date'] as String? ?? '';
-    final summary = data?['summary'] as String? ?? c.visitPrepSummary.value;
+    final title = data['title'] as String? ?? '';
+    final date = data['date'] as String? ?? '';
+    final summary = data['summary'] as String? ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -34,12 +31,7 @@ class VisitPrepSummaryScreen extends StatelessWidget {
                     fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            if (data != null && data!.containsKey('selectedCategories'))
-              ..._buildNewFormatRows(data!)
-            else if (data == null)
-              ..._buildLiveRows(c)
-            else
-              ..._buildLegacyRows(data!),
+            ..._buildBodyRows(data),
 
             const SizedBox(height: 28),
             const Divider(),
@@ -58,9 +50,7 @@ class VisitPrepSummaryScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            data == null
-                ? Obx(() => _summaryText(c.visitPrepSummary.value))
-                : _summaryText(summary),
+            _summaryText(summary),
 
             const SizedBox(height: 36),
             SizedBox(
@@ -76,7 +66,62 @@ class VisitPrepSummaryScreen extends StatelessWidget {
     );
   }
 
+  // Pick a renderer based on which keys the record contains.
+  List<Widget> _buildBodyRows(Map<String, dynamic> d) {
+    if (d.containsKey('questions')) {
+      return _buildNewFormatRows(d);
+    }
+    if (d.containsKey('selectedCategories')) {
+      return _buildCategoryFormatRows(d);
+    }
+    return _buildLegacyRows(d);
+  }
+
+  // ── New simplified format: reason (title) + questions list ─────────────
   List<Widget> _buildNewFormatRows(Map<String, dynamic> d) {
+    final title = d['title'] as String? ?? '';
+    final questions = List<String>.from(d['questions'] ?? const []);
+
+    return [
+      if (title.isNotEmpty) _buildRow('summary.reason'.tr, title),
+      const SizedBox(height: 6),
+      Text('summary.questions'.tr,
+          style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600])),
+      const SizedBox(height: 6),
+      if (questions.isEmpty)
+        Text('summary.no_questions'.tr,
+            style: TextStyle(
+                fontSize: 15, color: Colors.grey[500], height: 1.4))
+      else
+        ...List.generate(questions.length, (i) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Text('${i + 1}.',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+                Expanded(
+                  child: Text(questions[i],
+                      style:
+                          const TextStyle(fontSize: 16, height: 1.4)),
+                ),
+              ],
+            ),
+          );
+        }),
+    ];
+  }
+
+  // ── Older category-based records ───────────────────────────────────────
+  List<Widget> _buildCategoryFormatRows(Map<String, dynamic> d) {
     final selectedCats = List<String>.from(d['selectedCategories'] ?? []);
     final selectedSubs = List<String>.from(d['selectedSubItems'] ?? []);
     final notes = Map<String, String>.from(
@@ -86,29 +131,6 @@ class VisitPrepSummaryScreen extends StatelessWidget {
     final trend = d['symptomTrend'] as String? ?? '';
     final goals = List<String>.from(d['visitGoals'] ?? []);
 
-    return _buildCategoryWidgets(
-        selectedCats, selectedSubs, notes, duration, trend, goals);
-  }
-
-  List<Widget> _buildLiveRows(HealthController c) {
-    return _buildCategoryWidgets(
-      c.selectedCategories.toList(),
-      c.selectedSubItems.toList(),
-      Map<String, String>.from(c.itemNotes),
-      c.duration.value,
-      c.symptomTrend.value,
-      c.visitGoals.toList(),
-    );
-  }
-
-  List<Widget> _buildCategoryWidgets(
-    List<String> selectedCats,
-    List<String> selectedSubs,
-    Map<String, String> notes,
-    String duration,
-    String trend,
-    List<String> goals,
-  ) {
     final widgets = <Widget>[];
 
     for (final cat in kVisitTaxonomy) {
@@ -132,8 +154,7 @@ class VisitPrepSummaryScreen extends StatelessWidget {
       widgets.add(_buildRow('summary.trend'.tr, trend));
     }
     if (goals.isNotEmpty) {
-      widgets.add(
-          _buildRow('summary.visit_goal'.tr, goals.join(', ')));
+      widgets.add(_buildRow('summary.visit_goal'.tr, goals.join(', ')));
     }
 
     return widgets;

@@ -40,17 +40,18 @@ class AiService {
   static Future<Map<String, String>> summarizeConsultation(
     String transcript, {
     Patient? patient,
-    String duration = '',
-    String symptomTrend = '',
-    List<String> visitGoals = const [],
+    String reason = '',
+    List<String> questions = const [],
     String targetLanguage = 'English',
   }) async {
     final patientContext = _buildPatientContext(patient);
 
+    final cleanQuestions =
+        questions.map((q) => q.trim()).where((q) => q.isNotEmpty).toList();
     final preVisit = [
-      if (duration.isNotEmpty) 'Duration of symptoms: $duration',
-      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
-      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
+      if (reason.isNotEmpty) 'Reason for the visit: $reason',
+      if (cleanQuestions.isNotEmpty)
+        'Patient\'s questions:\n${cleanQuestions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}',
     ].join('\n');
 
     final prompt = '''
@@ -116,26 +117,35 @@ Patient question: $question
   }
 
   // ── 4. Pre-visit summary ─────────────────────────────────────────────────
+  // Takes the patient's reason and a list of questions; returns a short,
+  // plain-language confirmation paragraph (1–2 sentences).
   static Future<String> summarizeVisitPrep({
-    String visitContext = '',
-    String duration = '',
-    String symptomTrend = '',
-    List<String> visitGoals = const [],
+    required String reason,
+    List<String> questions = const [],
+    String targetLanguage = 'English',
   }) async {
-    final answers = [
-      if (visitContext.isNotEmpty) 'Symptoms / concerns:\n$visitContext',
-      if (duration.isNotEmpty) 'How long: $duration',
-      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
-      if (visitGoals.isNotEmpty) 'What they want from the visit: ${visitGoals.join(', ')}',
-    ].join('\n');
+    final cleanQuestions =
+        questions.map((q) => q.trim()).where((q) => q.isNotEmpty).toList();
+
+    final qBlock = cleanQuestions.isEmpty
+        ? '(none)'
+        : cleanQuestions
+            .asMap()
+            .entries
+            .map((e) => '${e.key + 1}. ${e.value}')
+            .join('\n');
 
     final prompt = '''
-A patient filled in a short pre-appointment questionnaire.
-Write 2–3 warm, plain sentences summarising their situation so they can confirm it sounds right.
-Use "you" and "your". No medical jargon. Be reassuring.
+A patient prepared notes before a doctor's visit.
 
-Questionnaire answers:
-$answers
+Reason for the visit:
+$reason
+
+Questions the patient plans to ask:
+$qBlock
+
+Write 1–2 short, plain sentences in $targetLanguage so the patient can confirm it sounds right.
+Use "you" and "your". No medical jargon. Be precise and reassuring.
 ''';
 
     return _callNemotron(prompt);

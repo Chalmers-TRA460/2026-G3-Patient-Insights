@@ -142,9 +142,8 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       final result = await AiService.summarizeConsultation(
         text,
         patient: _healthController.patient.value,
-        duration: _healthController.duration.value,
-        symptomTrend: _healthController.symptomTrend.value,
-        visitGoals: _healthController.visitGoals.toList(),
+        reason: _healthController.visitTitle.value,
+        questions: _healthController.visitQuestions.toList(),
         targetLanguage: targetLanguage,
       );
 
@@ -161,9 +160,8 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'transcript': text,
           'briefSummary': result['brief_actionable'] ?? '',
           'detailedSummary': result['detailed_personalized'] ?? '',
-          'duration': _healthController.duration.value,
-          'symptomTrend': _healthController.symptomTrend.value,
-          'visitGoals': _healthController.visitGoals.toList(),
+          'reason': _healthController.visitTitle.value,
+          'questions': _healthController.visitQuestions.toList(),
         });
 
         await _healthController.fetchConsultations();

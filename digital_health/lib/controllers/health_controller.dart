@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
-import '../models/questionnaire_model.dart';
 import '../services/ai_service.dart';
 import 'settings_controller.dart';
 
@@ -22,17 +21,9 @@ class HealthController extends GetxController {
 
   RxList<Map<String, dynamic>> visitPreps = <Map<String, dynamic>>[].obs;
   RxString visitTitle = ''.obs;
-  RxString duration = ''.obs;
-  RxString symptomTrend = ''.obs;
-  RxList<String> visitGoals = <String>[].obs;
+  RxList<String> visitQuestions = <String>[].obs;
   RxString visitPrepSummary = ''.obs;
   RxBool isGeneratingSummary = false.obs;
-
-  // Progressive-disclosure questionnaire state
-  RxSet<String> selectedCategories = <String>{}.obs;
-  RxSet<String> expandedCategories = <String>{}.obs;
-  RxSet<String> selectedSubItems = <String>{}.obs;
-  RxMap<String, String> itemNotes = <String, String>{}.obs;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -200,71 +191,12 @@ class HealthController extends GetxController {
     return missing;
   }
 
-  // ── Visit prep – category/sub-item state ─────────────────────────────────────
-
-  void toggleCategory(String id) {
-    if (selectedCategories.contains(id)) {
-      selectedCategories.remove(id);
-      expandedCategories.remove(id);
-      itemNotes.remove(id);
-      // Clear any sub-item state for this category.
-      for (final cat in kVisitTaxonomy) {
-        if (cat.id == id) {
-          for (final sub in cat.subQuestions) {
-            selectedSubItems.remove(sub.id);
-            itemNotes.remove(sub.id);
-          }
-          break;
-        }
-      }
-    } else {
-      selectedCategories.add(id);
-      expandedCategories.add(id); // auto-expand on first tick
-    }
-  }
-
-  void toggleExpanded(String id) {
-    if (expandedCategories.contains(id)) {
-      expandedCategories.remove(id);
-    } else {
-      expandedCategories.add(id);
-    }
-  }
-
-  void toggleSubItem(String id) {
-    if (selectedSubItems.contains(id)) {
-      selectedSubItems.remove(id);
-    } else {
-      selectedSubItems.add(id);
-    }
-  }
-
-  void setNote(String id, String text) {
-    if (text.isEmpty) {
-      itemNotes.remove(id);
-    } else {
-      itemNotes[id] = text;
-    }
-  }
-
-  void toggleVisitGoal(String goal) {
-    if (visitGoals.contains(goal)) {
-      visitGoals.remove(goal);
-    } else {
-      visitGoals.add(goal);
-    }
-  }
+  // ── Visit prep – form state helpers ──────────────────────────────────────
 
   void clearVisitNotes() {
     visitTitle.value = '';
-    duration.value = '';
-    symptomTrend.value = '';
-    visitGoals.clear();
+    visitQuestions.clear();
     visitPrepSummary.value = '';
-    selectedCategories.clear();
-    expandedCategories.clear();
-    selectedSubItems.clear();
-    itemNotes.clear();
   }
 
   // ── Visit prep – load / save ──────────────────────────────────────────────────
@@ -286,103 +218,40 @@ class HealthController extends GetxController {
     }
   }
 
-  // Populates controller state from a saved record (supports both new and
-  // legacy flat format) so the edit screen can pre-fill the form.
+  // Populates controller state from a saved record so the edit screen can
+  // pre-fill the form. Older record formats only contributed a title, so for
+  // those we keep the title and let the user re-enter their questions.
   void loadVisitPrepForEdit(int index) {
     final prep = visitPreps[index];
     visitTitle.value = prep['title'] ?? '';
-    duration.value = prep['duration'] ?? '';
-    symptomTrend.value = prep['symptomTrend'] ?? '';
-    visitGoals.assignAll(List<String>.from(prep['visitGoals'] ?? []));
     visitPrepSummary.value = prep['summary'] ?? '';
-
-    if (prep.containsKey('selectedCategories')) {
-      // New progressive-disclosure format.
-      selectedCategories
-        ..clear()
-        ..addAll(Set<String>.from(prep['selectedCategories'] ?? []));
-      selectedSubItems
-        ..clear()
-        ..addAll(Set<String>.from(prep['selectedSubItems'] ?? []));
-      itemNotes.assignAll(Map<String, String>.from(
-          (prep['itemNotes'] as Map? ?? {}).map((k, v) => MapEntry(k.toString(), v.toString()))));
-      expandedCategories
-        ..clear()
-        ..addAll(Set<String>.from(selectedCategories));
-    } else {
-      // Legacy flat format: map old reason labels to taxonomy IDs.
-      final legacyReasons = List<String>.from(prep['visitReasons'] ?? []);
-      final ids = legacyReasons
-          .map((r) => kLegacyReasonToId[r])
-          .whereType<String>()
-          .toSet();
-      selectedCategories
-        ..clear()
-        ..addAll(ids);
-      expandedCategories
-        ..clear()
-        ..addAll(ids);
-      selectedSubItems.clear();
-      itemNotes.clear();
-    }
+    visitQuestions.assignAll(List<String>.from(prep['questions'] ?? const []));
   }
 
-  // Builds a FHIR R4 QuestionnaireResponse as a plain Map so no fhir package
-  // types are needed. The JSON structure is identical to what the typed API
-  // would produce and is fully spec-compliant.
+  // Builds a FHIR R4 QuestionnaireResponse as a plain Map. Captures the
+  // reason for the visit and the list of patient questions.
   Map<String, dynamic> _buildFhirResponseJson(String uid) {
-    Map<String, dynamic> answer(String text) => {'valueString': text};
-
-    Map<String, dynamic> item(String linkId, String text,
-        {String? note, List<Map<String, dynamic>>? nested}) {
-      return {
-        'linkId': linkId,
-        'text': text,
-        if (note != null && note.isNotEmpty) 'answer': [answer(note)],
-        if (nested != null && nested.isNotEmpty) 'item': nested,
-      };
-    }
-
     final items = <Map<String, dynamic>>[];
 
-    for (final cat in kVisitTaxonomy) {
-      if (!selectedCategories.contains(cat.id)) continue;
-
-      final catNote = itemNotes[cat.id] ?? '';
-      final nested = <Map<String, dynamic>>[];
-
-      for (final sub in cat.subQuestions) {
-        final subNote = itemNotes[sub.id] ?? '';
-        if (!selectedSubItems.contains(sub.id) && subNote.isEmpty) continue;
-        nested.add(item(sub.id, sub.label, note: subNote.isNotEmpty ? subNote : null));
-      }
-
-      items.add(item(cat.id, cat.label,
-          note: catNote.isNotEmpty ? catNote : null,
-          nested: nested.isEmpty ? null : nested));
-    }
-
-    if (duration.value.isNotEmpty) {
+    if (visitTitle.value.trim().isNotEmpty) {
       items.add({
-        'linkId': 'duration',
-        'text': 'How long have you had this?',
-        'answer': [answer(duration.value)],
+        'linkId': 'reason',
+        'text': 'Why are you going to the doctor?',
+        'answer': [
+          {'valueString': visitTitle.value.trim()}
+        ],
       });
     }
 
-    if (symptomTrend.value.isNotEmpty) {
+    final qs = visitQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    if (qs.isNotEmpty) {
       items.add({
-        'linkId': 'symptomTrend',
-        'text': 'Is it getting better or worse?',
-        'answer': [answer(symptomTrend.value)],
-      });
-    }
-
-    if (visitGoals.isNotEmpty) {
-      items.add({
-        'linkId': 'goals',
-        'text': 'What do you want from this visit?',
-        'answer': visitGoals.map(answer).toList(),
+        'linkId': 'questions',
+        'text': 'What questions do you want to ask?',
+        'answer': qs.map((q) => {'valueString': q}).toList(),
       });
     }
 
@@ -398,33 +267,21 @@ class HealthController extends GetxController {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    final cleanQuestions = visitQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    visitQuestions.assignAll(cleanQuestions);
+
     isGeneratingSummary.value = true;
     try {
-      // Build a human-readable context string for the AI prompt.
-      final contextLines = <String>[];
-      for (final cat in kVisitTaxonomy) {
-        if (!selectedCategories.contains(cat.id)) continue;
-        final catNote = itemNotes[cat.id] ?? '';
-        var line = cat.label;
-        if (catNote.isNotEmpty) line += ' — $catNote';
-        final subLines = cat.subQuestions
-            .where((s) =>
-                selectedSubItems.contains(s.id) ||
-                (itemNotes[s.id]?.isNotEmpty ?? false))
-            .map((s) {
-              final sNote = itemNotes[s.id] ?? '';
-              return sNote.isNotEmpty ? '${s.label}: $sNote' : s.label;
-            })
-            .join('; ');
-        if (subLines.isNotEmpty) line += ' ($subLines)';
-        contextLines.add(line);
-      }
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
 
       final summary = await AiService.summarizeVisitPrep(
-        visitContext: contextLines.join('\n'),
-        duration: duration.value,
-        symptomTrend: symptomTrend.value,
-        visitGoals: visitGoals.toList(),
+        reason: visitTitle.value.trim(),
+        questions: cleanQuestions,
+        targetLanguage: targetLanguage,
       );
 
       visitPrepSummary.value = summary;
@@ -432,18 +289,11 @@ class HealthController extends GetxController {
       final fhirResponse = _buildFhirResponseJson(user.uid);
 
       final entry = <String, dynamic>{
-        'title': visitTitle.value,
+        'title': visitTitle.value.trim(),
         'date': editIndex != null
             ? visitPreps[editIndex]['date']
             : DateTime.now().toIso8601String().split('T')[0],
-        // Raw editable state (used when re-opening for edit).
-        'selectedCategories': selectedCategories.toList(),
-        'selectedSubItems': selectedSubItems.toList(),
-        'itemNotes': Map<String, String>.from(itemNotes),
-        'duration': duration.value,
-        'symptomTrend': symptomTrend.value,
-        'visitGoals': visitGoals.toList(),
-        // FHIR R4 QuestionnaireResponse.
+        'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
         'summary': summary,
       };

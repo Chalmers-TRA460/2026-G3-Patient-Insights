@@ -48,9 +48,20 @@ class VisitPrepHistoryScreen extends StatelessWidget {
           itemBuilder: (_, i) {
             final prep = c.visitPreps[i];
             final title = prep['title'] as String? ?? '';
-            final reasons = List<String>.from(prep['visitReasons'] ?? []);
             final date = prep['date'] as String? ?? '';
             final summary = prep['summary'] as String? ?? '';
+
+            // Build chips: new format -> question texts; old formats -> reasons.
+            final List<String> chips;
+            if (prep.containsKey('questions')) {
+              chips = List<String>.from(prep['questions'] ?? const []);
+            } else if (prep.containsKey('selectedCategories')) {
+              final ids =
+                  List<String>.from(prep['selectedCategories'] ?? const []);
+              chips = ids.map((id) => 'visit.cat.$id'.tr).toList();
+            } else {
+              chips = List<String>.from(prep['visitReasons'] ?? const []);
+            }
 
             return GestureDetector(
               onTap: () => Get.to(() => VisitPrepSummaryScreen(data: prep)),
@@ -125,12 +136,12 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (reasons.isNotEmpty) ...[
+                    if (chips.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 6,
                         runSpacing: 4,
-                        children: reasons
+                        children: chips
                             .map((r) => Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 4),
@@ -138,10 +149,14 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                                     color: const Color(0xFFEEF2FF),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Text(r,
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF4338CA))),
+                                  child: Text(
+                                    r,
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF4338CA)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ))
                             .toList(),
                       ),
