@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../widgets/viewing_banner.dart';
 import 'edit_profile_screen.dart';
 
 class HealthProfileScreen extends StatelessWidget {
@@ -16,28 +17,39 @@ class HealthProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('profile.title'.tr),
         actions: [
-          TextButton(
-            onPressed: () => Get.to(
-                  () => const EditProfileScreen(),
-                  fullscreenDialog: true,
-                ),
-            child: Text('profile.edit'.tr,
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
+          Obx(() => controller.isViewingOther
+              ? const SizedBox.shrink()
+              : TextButton(
+                  onPressed: () => Get.to(
+                        () => const EditProfileScreen(),
+                        fullscreenDialog: true,
+                      ),
+                  child: Text('profile.edit'.tr,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                )),
         ],
       ),
       body: Obx(() {
-        final patient = controller.patient.value;
+        final patient = controller.effectivePatient;
         if (patient == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final authName = FirebaseAuth.instance.currentUser?.displayName ?? '';
-        final displayName = authName.isNotEmpty ? authName : (patient.name != 'User' ? patient.name : 'User');
+        // When viewing a family member, use their stored name directly.
+        // For own profile, prefer the Firebase Auth displayName.
+        final authName = controller.isViewingOther
+            ? ''
+            : (FirebaseAuth.instance.currentUser?.displayName ?? '');
+        final displayName = authName.isNotEmpty
+            ? authName
+            : (patient.name != 'User' ? patient.name : 'User');
         final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
-        return SingleChildScrollView(
+        return Column(
+          children: [
+            const ViewingBanner(),
+            Expanded(child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +233,9 @@ class HealthProfileScreen extends StatelessWidget {
               const SizedBox(height: 40),
             ],
           ),
-        );
+        )),  // closes Expanded + SingleChildScrollView
+          ],
+        );  // closes outer Column
       }),
     );
   }

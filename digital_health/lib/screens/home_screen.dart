@@ -9,6 +9,7 @@ import 'prepare_visit_screen.dart';
 import 'record_consultation_screen.dart';
 import 'visit_prep_history_screen.dart';
 import 'quiz_history_screen.dart';
+import '../widgets/viewing_banner.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -32,7 +33,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Obx(() {
-          final name = controller.patient.value?.name ?? 'there';
+          final name = controller.effectivePatient?.name ?? 'there';
           final firstName = name.split(' ').first;
           return Text('home.greeting'.trParams({'name': firstName}),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24));
@@ -44,7 +45,10 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Column(
+        children: [
+          const ViewingBanner(),
+          Expanded(child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,7 +426,9 @@ class HomeScreen extends StatelessWidget {
                 : const SizedBox(height: 30)),
           ],
         ),
-      ),
+      )),  // closes Expanded + SingleChildScrollView
+        ],
+      ),   // closes outer Column
     );
   }
 

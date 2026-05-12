@@ -7,6 +7,8 @@ import '../controllers/settings_controller.dart';
 import 'account_settings_screen.dart';
 import 'notifications_screen.dart';
 import 'privacy_security_screen.dart';
+import 'caregiver_screen.dart';
+import 'family_access_screen.dart';
 import 'help_support_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -113,6 +115,22 @@ class SettingsScreen extends StatelessWidget {
               title: 'Privacy & Security',
               subtitle: 'Data usage, GDPR, delete data',
               onTap: () => Get.to(() => const PrivacySecurityScreen()),
+            ),
+            _buildTile(
+              context,
+              icon: Icons.people_rounded,
+              iconColor: Colors.purple,
+              title: 'caregiver.settings_title'.tr,
+              subtitle: 'caregiver.settings_subtitle'.tr,
+              onTap: () => Get.to(() => const CaregiverScreen()),
+            ),
+            _buildTile(
+              context,
+              icon: Icons.family_restroom_rounded,
+              iconColor: Colors.teal,
+              title: 'family.settings_title'.tr,
+              subtitle: 'family.settings_subtitle'.tr,
+              onTap: () => Get.to(() => const FamilyAccessScreen()),
             ),
             _buildTile(
               context,

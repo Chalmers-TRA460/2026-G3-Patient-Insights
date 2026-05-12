@@ -11,6 +11,7 @@ class Patient {
   final List<Map<String, String>> medications;
   final Map<String, dynamic> vitals;
   final Map<String, String>? emergencyContact;
+  final List<String> authorizedCaregivers;
 
   Patient({
     required this.id,
@@ -25,6 +26,7 @@ class Patient {
     this.medications = const [],
     this.vitals = const {},
     this.emergencyContact,
+    this.authorizedCaregivers = const [],
   });
 
   double get bmi {
@@ -72,6 +74,8 @@ class Patient {
       emergencyContact: data['emergencyContact'] != null
           ? Map<String, String>.from(data['emergencyContact'])
           : null,
+      authorizedCaregivers:
+          List<String>.from(data['authorizedCaregivers'] ?? []),
     );
   }
 
@@ -88,6 +92,7 @@ class Patient {
       'medications': medications,
       'vitals': vitals,
       'emergencyContact': emergencyContact,
+      'authorizedCaregivers': authorizedCaregivers,
     };
   }
 }

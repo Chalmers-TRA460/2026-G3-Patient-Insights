@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,6 +18,17 @@ class HealthController extends GetxController {
   RxBool isLoading = false.obs;
   RxBool isSummarizingVisit = false.obs;
 
+  // ── Family / caregiver view ───────────────────────────────────────────────
+
+  // Non-null only when viewing a family member's profile.
+  Rxn<Patient> currentViewedPatient = Rxn<Patient>();
+  RxList<Patient> accessiblePatients = <Patient>[].obs;
+  RxBool isFetchingAccessible = false.obs;
+
+  // Returns the family member being viewed, or the primary user's own record.
+  Patient? get effectivePatient => currentViewedPatient.value ?? patient.value;
+  bool get isViewingOther => currentViewedPatient.value != null;
+
   // ── Visit preparations ───────────────────────────────────────────────────────
 
   RxList<Map<String, dynamic>> visitPreps = <Map<String, dynamic>>[].obs;
@@ -27,12 +39,37 @@ class HealthController extends GetxController {
 
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
+  StreamSubscription<User?>? _authSub;
+
   @override
   void onInit() {
     super.onInit();
-    fetchPatientData();
-    fetchConsultations();
-    fetchVisitPreps();
+    // Listen to auth state so data is always scoped to the current user.
+    // This also fixes stale data appearing for a new account after sign-out:
+    // the listener fires immediately with the current user on first init,
+    // and again whenever the signed-in user changes.
+    _authSub = _auth.authStateChanges().listen(_onAuthStateChanged);
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    super.onClose();
+  }
+
+  void _onAuthStateChanged(User? user) {
+    // Clear every reactive field so no previous user's data leaks through.
+    patient.value = null;
+    consultations.clear();
+    visitPreps.clear();
+    currentViewedPatient.value = null;
+    accessiblePatients.clear();
+
+    if (user != null) {
+      fetchPatientData();
+      fetchConsultations();
+      fetchVisitPreps();
+    }
   }
 
   // ── Patient data ─────────────────────────────────────────────────────────────
@@ -44,6 +81,18 @@ class HealthController extends GetxController {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         patient.value = Patient.fromFirestore(doc.data()!, user.uid);
+        // Always write the canonical lowercase email from Firebase Auth on
+        // every login. This ensures the field is present and correct for
+        // all users — including those with legacy documents that pre-date
+        // the email field — so caregiver search queries work immediately.
+        final authEmail = (user.email ?? '').toLowerCase();
+        if (authEmail.isNotEmpty) {
+          _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set({'email': authEmail}, SetOptions(merge: true))
+              .catchError((_) {});
+        }
       } else {
         final newPatient = Patient(
           id: user.uid,
@@ -146,12 +195,99 @@ class HealthController extends GetxController {
     }
   }
 
+  // ── Family access ────────────────────────────────────────────────────────────
+
+  Future<void> fetchAccessiblePatients() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final email = (user.email ?? '').trim().toLowerCase();
+    if (email.isEmpty) return;
+    isFetchingAccessible.value = true;
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('authorizedCaregivers', arrayContains: email)
+          .get();
+      accessiblePatients.value = snapshot.docs
+          .map((doc) => Patient.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      print('fetchAccessiblePatients error: $e');
+    } finally {
+      isFetchingAccessible.value = false;
+    }
+  }
+
+  void switchToPatient(Patient p) {
+    currentViewedPatient.value = p;
+  }
+
+  void returnToMyProfile() {
+    currentViewedPatient.value = null;
+  }
+
+  // ── Caregiver management ─────────────────────────────────────────────────────
+
+  Future<void> addCaregiver(String email) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final normalized = email.trim().toLowerCase();
+
+    // Local duplicate check — avoids a network round-trip for obvious cases.
+    final current = patient.value?.authorizedCaregivers ?? [];
+    if (current.contains(normalized)) {
+      Get.snackbar('caregiver.already_added_title'.tr,
+          'caregiver.already_added_body'.tr);
+      return;
+    }
+
+    try {
+      // Verify the email belongs to a registered user before granting access.
+      final matches = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: normalized)
+          .limit(1)
+          .get();
+
+      if (matches.docs.isEmpty) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.not_found'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'authorizedCaregivers': FieldValue.arrayUnion([normalized]),
+      });
+      await fetchPatientData();
+      Get.snackbar(
+        'caregiver.success_title'.tr,
+        'caregiver.success_body'.trParams({'email': normalized}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'caregiver.error_add'.tr);
+    }
+  }
+
+  Future<void> removeCaregiver(String email) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'authorizedCaregivers': FieldValue.arrayRemove([email]),
+      });
+      await fetchPatientData();
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'caregiver.error_remove'.tr);
+    }
+  }
+
   // ── Profile completeness ─────────────────────────────────────────────────────
 
   double get completionPercentage {
-    if (patient.value == null) return 0;
+    if (effectivePatient == null) return 0;
     int filled = 0;
-    final p = patient.value!;
+    final p = effectivePatient!;
     if (p.dob != null) filled++;
     if (p.bloodType != 'Unknown') filled++;
     if (p.height > 0) filled++;
@@ -177,7 +313,7 @@ class HealthController extends GetxController {
   }
 
   List<String> get missingFields {
-    final p = patient.value;
+    final p = effectivePatient;
     if (p == null) return [];
     final missing = <String>[];
     if (p.dob == null) missing.add('Date of Birth');
