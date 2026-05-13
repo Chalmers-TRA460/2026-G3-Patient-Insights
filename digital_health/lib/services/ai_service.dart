@@ -2,17 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
+import '../secrets.dart';
 
 class AiService {
-  // OpenRouter key — Nvidia Nemotron summarisation & Q&A
-  static const String _openRouterKey =
-      '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';
   static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
-
-  // Groq key — Whisper audio transcription (free tier: 7200 s/day)
-  // Get yours free at https://console.groq.com
-  static const String _groqKey = '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';
   static const String _whisperUrl =
       'https://api.groq.com/openai/v1/audio/transcriptions';
 
@@ -23,7 +17,7 @@ class AiService {
     if (!file.existsSync()) throw Exception('Audio file not found: $filePath');
 
     final request = http.MultipartRequest('POST', Uri.parse(_whisperUrl))
-      ..headers['Authorization'] = 'Bearer $_groqKey'
+      ..headers['Authorization'] = 'Bearer $kGroqKey'
       ..fields['model'] = 'whisper-large-v3'
       ..fields['language'] = 'en'
       ..fields['response_format'] = 'text'
@@ -143,7 +137,7 @@ Patient profile:
       final response = await http.post(
         Uri.parse(_openRouterUrl),
         headers: {
-          'Authorization': 'Bearer $_openRouterKey',
+          'Authorization': 'Bearer $kOpenRouterKey',
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://patientinsights.chalmers.se',
           'X-Title': 'Patient Insights',
