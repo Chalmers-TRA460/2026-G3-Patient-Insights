@@ -9,7 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../controllers/health_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../services/ai_service.dart';
+import 'consultation_detail_screen.dart';
+import 'consultation_history_screen.dart';
 
 enum _Stage { idle, recording, transcribing, transcribed, summarizing }
 
@@ -86,7 +89,9 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   Future<void> _transcribeAudio() async {
     if (_audioPath == null) return;
     try {
-      final transcript = await AiService.transcribeAudio(_audioPath!);
+      final langCode = Get.find<SettingsController>().resolvedLanguageCode;
+      final transcript = await AiService.transcribeAudio(_audioPath!,
+          languageCode: langCode);
       _transcriptController.text = transcript;
       setState(() => _stage = _Stage.transcribed);
     } catch (e) {
@@ -98,6 +103,25 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       try {
         File(_audioPath!).deleteSync();
       } catch (_) {}
+    }
+  }
+
+  // ── Save transcript only ──────────────────────────────────────────────────
+
+  Future<void> _saveTranscript() async {
+    final text = _transcriptController.text.trim();
+    if (text.isEmpty) {
+      Get.snackbar('snackbar.error'.tr, 'Transcript is empty.');
+      return;
+    }
+    setState(() => _stage = _Stage.summarizing);
+    try {
+      await _healthController.saveConsultationTranscript(text);
+      _healthController.clearVisitNotes();
+      Get.off(() => const ConsultationHistoryScreen());
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to save: $e');
+      setState(() => _stage = _Stage.transcribed);
     }
   }
 
@@ -113,12 +137,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     setState(() => _stage = _Stage.summarizing);
 
     try {
-      final summary = await AiService.summarizeConsultation(
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
+      final result = await AiService.summarizeConsultation(
         text,
         patient: _healthController.patient.value,
-        duration: _healthController.duration.value,
-        symptomTrend: _healthController.symptomTrend.value,
-        visitGoals: _healthController.visitGoals.toList(),
+        reason: _healthController.visitTitle.value,
+        questions: _healthController.visitQuestions.toList(),
+        targetLanguage: targetLanguage,
       );
 
       final user = FirebaseAuth.instance.currentUser;
@@ -132,18 +158,24 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'date': DateTime.now().toIso8601String().split('T')[0],
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': text,
-          'summary': summary,
-          'duration': _healthController.duration.value,
-          'symptomTrend': _healthController.symptomTrend.value,
-          'visitGoals': _healthController.visitGoals.toList(),
+          'briefSummary': result['brief_actionable'] ?? '',
+          'detailedSummary': result['detailed_personalized'] ?? '',
+          'reason': _healthController.visitTitle.value,
+          'questions': _healthController.visitQuestions.toList(),
         });
 
         await _healthController.fetchConsultations();
         _healthController.clearVisitNotes();
       }
 
-      Get.back();
-      Get.snackbar('Saved', 'Visit summary saved to history!');
+      if (_healthController.consultations.isNotEmpty) {
+        Get.off(() => ConsultationDetailScreen(
+              consultation: _healthController.consultations.first,
+              index: 0,
+            ));
+      } else {
+        Get.back();
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to save summary: $e');
       setState(() => _stage = _Stage.transcribed);
@@ -333,13 +365,28 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.auto_awesome_rounded),
-            label: const Text('Summarise with AI',
-                style: TextStyle(fontSize: 18)),
+            label: Text('record.btn.summarize'.tr,
+                style: const TextStyle(fontSize: 18)),
             onPressed: _summarize,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.save_alt_rounded),
+            label: Text('record.btn.save_transcript'.tr,
+                style: const TextStyle(fontSize: 16)),
+            onPressed: _saveTranscript,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.blueGrey,
+              side: const BorderSide(color: Colors.blueGrey),
+              padding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),

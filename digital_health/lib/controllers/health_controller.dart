@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
-import '../models/questionnaire_model.dart';
 import '../services/ai_service.dart';
+import 'settings_controller.dart';
 
 class HealthController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,31 +16,60 @@ class HealthController extends GetxController {
   Rxn<Patient> patient = Rxn<Patient>();
   RxList<Map<String, dynamic>> consultations = <Map<String, dynamic>>[].obs;
   RxBool isLoading = false.obs;
+  RxBool isSummarizingVisit = false.obs;
+
+  // ── Family / caregiver view ───────────────────────────────────────────────
+
+  // Non-null only when viewing a family member's profile.
+  Rxn<Patient> currentViewedPatient = Rxn<Patient>();
+  RxList<Patient> accessiblePatients = <Patient>[].obs;
+  RxBool isFetchingAccessible = false.obs;
+
+  // Returns the family member being viewed, or the primary user's own record.
+  Patient? get effectivePatient => currentViewedPatient.value ?? patient.value;
+  bool get isViewingOther => currentViewedPatient.value != null;
 
   // ── Visit preparations ───────────────────────────────────────────────────────
 
   RxList<Map<String, dynamic>> visitPreps = <Map<String, dynamic>>[].obs;
   RxString visitTitle = ''.obs;
-  RxString duration = ''.obs;
-  RxString symptomTrend = ''.obs;
-  RxList<String> visitGoals = <String>[].obs;
+  RxList<String> visitQuestions = <String>[].obs;
   RxString visitPrepSummary = ''.obs;
   RxBool isGeneratingSummary = false.obs;
 
-  // Progressive-disclosure questionnaire state
-  RxSet<String> selectedCategories = <String>{}.obs;
-  RxSet<String> expandedCategories = <String>{}.obs;
-  RxSet<String> selectedSubItems = <String>{}.obs;
-  RxMap<String, String> itemNotes = <String, String>{}.obs;
-
   // ── Lifecycle ────────────────────────────────────────────────────────────────
+
+  StreamSubscription<User?>? _authSub;
 
   @override
   void onInit() {
     super.onInit();
-    fetchPatientData();
-    fetchConsultations();
-    fetchVisitPreps();
+    // Listen to auth state so data is always scoped to the current user.
+    // This also fixes stale data appearing for a new account after sign-out:
+    // the listener fires immediately with the current user on first init,
+    // and again whenever the signed-in user changes.
+    _authSub = _auth.authStateChanges().listen(_onAuthStateChanged);
+  }
+
+  @override
+  void onClose() {
+    _authSub?.cancel();
+    super.onClose();
+  }
+
+  void _onAuthStateChanged(User? user) {
+    // Clear every reactive field so no previous user's data leaks through.
+    patient.value = null;
+    consultations.clear();
+    visitPreps.clear();
+    currentViewedPatient.value = null;
+    accessiblePatients.clear();
+
+    if (user != null) {
+      fetchPatientData();
+      fetchConsultations();
+      fetchVisitPreps();
+    }
   }
 
   // ── Patient data ─────────────────────────────────────────────────────────────
@@ -51,6 +81,18 @@ class HealthController extends GetxController {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         patient.value = Patient.fromFirestore(doc.data()!, user.uid);
+        // Always write the canonical lowercase email from Firebase Auth on
+        // every login. This ensures the field is present and correct for
+        // all users — including those with legacy documents that pre-date
+        // the email field — so caregiver search queries work immediately.
+        final authEmail = (user.email ?? '').toLowerCase();
+        if (authEmail.isNotEmpty) {
+          _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set({'email': authEmail}, SetOptions(merge: true))
+              .catchError((_) {});
+        }
       } else {
         final newPatient = Patient(
           id: user.uid,
@@ -79,6 +121,46 @@ class HealthController extends GetxController {
       consultations.value = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error fetching consultations: $e');
+    }
+  }
+
+  Future<void> saveConsultationTranscript(String transcript) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('consultations')
+        .add({
+      'doctorName': 'record.doctor'.tr,
+      'date': DateTime.now().toIso8601String().split('T')[0],
+      'timestamp': FieldValue.serverTimestamp(),
+      'transcript': transcript,
+      'summary': '',
+    });
+    await fetchConsultations();
+  }
+
+  Future<void> generateSummaryForVisit(int index) async {
+    final transcript = consultations[index]['transcript'] as String? ?? '';
+    if (transcript.isEmpty) return;
+    isSummarizingVisit.value = true;
+    try {
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
+      final result = await AiService.summarizeConsultation(
+        transcript,
+        patient: patient.value,
+        targetLanguage: targetLanguage,
+      );
+      await updateConsultation(index, {
+        'briefSummary': result['brief_actionable'] ?? '',
+        'detailedSummary': result['detailed_personalized'] ?? '',
+      });
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to generate summary: $e');
+    } finally {
+      isSummarizingVisit.value = false;
     }
   }
 
@@ -113,12 +195,99 @@ class HealthController extends GetxController {
     }
   }
 
+  // ── Family access ────────────────────────────────────────────────────────────
+
+  Future<void> fetchAccessiblePatients() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final email = (user.email ?? '').trim().toLowerCase();
+    if (email.isEmpty) return;
+    isFetchingAccessible.value = true;
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('authorizedCaregivers', arrayContains: email)
+          .get();
+      accessiblePatients.value = snapshot.docs
+          .map((doc) => Patient.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      print('fetchAccessiblePatients error: $e');
+    } finally {
+      isFetchingAccessible.value = false;
+    }
+  }
+
+  void switchToPatient(Patient p) {
+    currentViewedPatient.value = p;
+  }
+
+  void returnToMyProfile() {
+    currentViewedPatient.value = null;
+  }
+
+  // ── Caregiver management ─────────────────────────────────────────────────────
+
+  Future<void> addCaregiver(String email) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final normalized = email.trim().toLowerCase();
+
+    // Local duplicate check — avoids a network round-trip for obvious cases.
+    final current = patient.value?.authorizedCaregivers ?? [];
+    if (current.contains(normalized)) {
+      Get.snackbar('caregiver.already_added_title'.tr,
+          'caregiver.already_added_body'.tr);
+      return;
+    }
+
+    try {
+      // Verify the email belongs to a registered user before granting access.
+      final matches = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: normalized)
+          .limit(1)
+          .get();
+
+      if (matches.docs.isEmpty) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.not_found'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'authorizedCaregivers': FieldValue.arrayUnion([normalized]),
+      });
+      await fetchPatientData();
+      Get.snackbar(
+        'caregiver.success_title'.tr,
+        'caregiver.success_body'.trParams({'email': normalized}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'caregiver.error_add'.tr);
+    }
+  }
+
+  Future<void> removeCaregiver(String email) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'authorizedCaregivers': FieldValue.arrayRemove([email]),
+      });
+      await fetchPatientData();
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'caregiver.error_remove'.tr);
+    }
+  }
+
   // ── Profile completeness ─────────────────────────────────────────────────────
 
   double get completionPercentage {
-    if (patient.value == null) return 0;
+    if (effectivePatient == null) return 0;
     int filled = 0;
-    final p = patient.value!;
+    final p = effectivePatient!;
     if (p.dob != null) filled++;
     if (p.bloodType != 'Unknown') filled++;
     if (p.height > 0) filled++;
@@ -144,7 +313,7 @@ class HealthController extends GetxController {
   }
 
   List<String> get missingFields {
-    final p = patient.value;
+    final p = effectivePatient;
     if (p == null) return [];
     final missing = <String>[];
     if (p.dob == null) missing.add('Date of Birth');
@@ -158,71 +327,12 @@ class HealthController extends GetxController {
     return missing;
   }
 
-  // ── Visit prep – category/sub-item state ─────────────────────────────────────
-
-  void toggleCategory(String id) {
-    if (selectedCategories.contains(id)) {
-      selectedCategories.remove(id);
-      expandedCategories.remove(id);
-      itemNotes.remove(id);
-      // Clear any sub-item state for this category.
-      for (final cat in kVisitTaxonomy) {
-        if (cat.id == id) {
-          for (final sub in cat.subQuestions) {
-            selectedSubItems.remove(sub.id);
-            itemNotes.remove(sub.id);
-          }
-          break;
-        }
-      }
-    } else {
-      selectedCategories.add(id);
-      expandedCategories.add(id); // auto-expand on first tick
-    }
-  }
-
-  void toggleExpanded(String id) {
-    if (expandedCategories.contains(id)) {
-      expandedCategories.remove(id);
-    } else {
-      expandedCategories.add(id);
-    }
-  }
-
-  void toggleSubItem(String id) {
-    if (selectedSubItems.contains(id)) {
-      selectedSubItems.remove(id);
-    } else {
-      selectedSubItems.add(id);
-    }
-  }
-
-  void setNote(String id, String text) {
-    if (text.isEmpty) {
-      itemNotes.remove(id);
-    } else {
-      itemNotes[id] = text;
-    }
-  }
-
-  void toggleVisitGoal(String goal) {
-    if (visitGoals.contains(goal)) {
-      visitGoals.remove(goal);
-    } else {
-      visitGoals.add(goal);
-    }
-  }
+  // ── Visit prep – form state helpers ──────────────────────────────────────
 
   void clearVisitNotes() {
     visitTitle.value = '';
-    duration.value = '';
-    symptomTrend.value = '';
-    visitGoals.clear();
+    visitQuestions.clear();
     visitPrepSummary.value = '';
-    selectedCategories.clear();
-    expandedCategories.clear();
-    selectedSubItems.clear();
-    itemNotes.clear();
   }
 
   // ── Visit prep – load / save ──────────────────────────────────────────────────
@@ -244,103 +354,40 @@ class HealthController extends GetxController {
     }
   }
 
-  // Populates controller state from a saved record (supports both new and
-  // legacy flat format) so the edit screen can pre-fill the form.
+  // Populates controller state from a saved record so the edit screen can
+  // pre-fill the form. Older record formats only contributed a title, so for
+  // those we keep the title and let the user re-enter their questions.
   void loadVisitPrepForEdit(int index) {
     final prep = visitPreps[index];
     visitTitle.value = prep['title'] ?? '';
-    duration.value = prep['duration'] ?? '';
-    symptomTrend.value = prep['symptomTrend'] ?? '';
-    visitGoals.assignAll(List<String>.from(prep['visitGoals'] ?? []));
     visitPrepSummary.value = prep['summary'] ?? '';
-
-    if (prep.containsKey('selectedCategories')) {
-      // New progressive-disclosure format.
-      selectedCategories
-        ..clear()
-        ..addAll(Set<String>.from(prep['selectedCategories'] ?? []));
-      selectedSubItems
-        ..clear()
-        ..addAll(Set<String>.from(prep['selectedSubItems'] ?? []));
-      itemNotes.assignAll(Map<String, String>.from(
-          (prep['itemNotes'] as Map? ?? {}).map((k, v) => MapEntry(k.toString(), v.toString()))));
-      expandedCategories
-        ..clear()
-        ..addAll(Set<String>.from(selectedCategories));
-    } else {
-      // Legacy flat format: map old reason labels to taxonomy IDs.
-      final legacyReasons = List<String>.from(prep['visitReasons'] ?? []);
-      final ids = legacyReasons
-          .map((r) => kLegacyReasonToId[r])
-          .whereType<String>()
-          .toSet();
-      selectedCategories
-        ..clear()
-        ..addAll(ids);
-      expandedCategories
-        ..clear()
-        ..addAll(ids);
-      selectedSubItems.clear();
-      itemNotes.clear();
-    }
+    visitQuestions.assignAll(List<String>.from(prep['questions'] ?? const []));
   }
 
-  // Builds a FHIR R4 QuestionnaireResponse as a plain Map so no fhir package
-  // types are needed. The JSON structure is identical to what the typed API
-  // would produce and is fully spec-compliant.
+  // Builds a FHIR R4 QuestionnaireResponse as a plain Map. Captures the
+  // reason for the visit and the list of patient questions.
   Map<String, dynamic> _buildFhirResponseJson(String uid) {
-    Map<String, dynamic> answer(String text) => {'valueString': text};
-
-    Map<String, dynamic> item(String linkId, String text,
-        {String? note, List<Map<String, dynamic>>? nested}) {
-      return {
-        'linkId': linkId,
-        'text': text,
-        if (note != null && note.isNotEmpty) 'answer': [answer(note)],
-        if (nested != null && nested.isNotEmpty) 'item': nested,
-      };
-    }
-
     final items = <Map<String, dynamic>>[];
 
-    for (final cat in kVisitTaxonomy) {
-      if (!selectedCategories.contains(cat.id)) continue;
-
-      final catNote = itemNotes[cat.id] ?? '';
-      final nested = <Map<String, dynamic>>[];
-
-      for (final sub in cat.subQuestions) {
-        final subNote = itemNotes[sub.id] ?? '';
-        if (!selectedSubItems.contains(sub.id) && subNote.isEmpty) continue;
-        nested.add(item(sub.id, sub.label, note: subNote.isNotEmpty ? subNote : null));
-      }
-
-      items.add(item(cat.id, cat.label,
-          note: catNote.isNotEmpty ? catNote : null,
-          nested: nested.isEmpty ? null : nested));
-    }
-
-    if (duration.value.isNotEmpty) {
+    if (visitTitle.value.trim().isNotEmpty) {
       items.add({
-        'linkId': 'duration',
-        'text': 'How long have you had this?',
-        'answer': [answer(duration.value)],
+        'linkId': 'reason',
+        'text': 'Why are you going to the doctor?',
+        'answer': [
+          {'valueString': visitTitle.value.trim()}
+        ],
       });
     }
 
-    if (symptomTrend.value.isNotEmpty) {
+    final qs = visitQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    if (qs.isNotEmpty) {
       items.add({
-        'linkId': 'symptomTrend',
-        'text': 'Is it getting better or worse?',
-        'answer': [answer(symptomTrend.value)],
-      });
-    }
-
-    if (visitGoals.isNotEmpty) {
-      items.add({
-        'linkId': 'goals',
-        'text': 'What do you want from this visit?',
-        'answer': visitGoals.map(answer).toList(),
+        'linkId': 'questions',
+        'text': 'What questions do you want to ask?',
+        'answer': qs.map((q) => {'valueString': q}).toList(),
       });
     }
 
@@ -356,33 +403,21 @@ class HealthController extends GetxController {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    final cleanQuestions = visitQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    visitQuestions.assignAll(cleanQuestions);
+
     isGeneratingSummary.value = true;
     try {
-      // Build a human-readable context string for the AI prompt.
-      final contextLines = <String>[];
-      for (final cat in kVisitTaxonomy) {
-        if (!selectedCategories.contains(cat.id)) continue;
-        final catNote = itemNotes[cat.id] ?? '';
-        var line = cat.label;
-        if (catNote.isNotEmpty) line += ' — $catNote';
-        final subLines = cat.subQuestions
-            .where((s) =>
-                selectedSubItems.contains(s.id) ||
-                (itemNotes[s.id]?.isNotEmpty ?? false))
-            .map((s) {
-              final sNote = itemNotes[s.id] ?? '';
-              return sNote.isNotEmpty ? '${s.label}: $sNote' : s.label;
-            })
-            .join('; ');
-        if (subLines.isNotEmpty) line += ' ($subLines)';
-        contextLines.add(line);
-      }
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
 
       final summary = await AiService.summarizeVisitPrep(
-        visitContext: contextLines.join('\n'),
-        duration: duration.value,
-        symptomTrend: symptomTrend.value,
-        visitGoals: visitGoals.toList(),
+        reason: visitTitle.value.trim(),
+        questions: cleanQuestions,
+        targetLanguage: targetLanguage,
       );
 
       visitPrepSummary.value = summary;
@@ -390,18 +425,11 @@ class HealthController extends GetxController {
       final fhirResponse = _buildFhirResponseJson(user.uid);
 
       final entry = <String, dynamic>{
-        'title': visitTitle.value,
+        'title': visitTitle.value.trim(),
         'date': editIndex != null
             ? visitPreps[editIndex]['date']
             : DateTime.now().toIso8601String().split('T')[0],
-        // Raw editable state (used when re-opening for edit).
-        'selectedCategories': selectedCategories.toList(),
-        'selectedSubItems': selectedSubItems.toList(),
-        'itemNotes': Map<String, String>.from(itemNotes),
-        'duration': duration.value,
-        'symptomTrend': symptomTrend.value,
-        'visitGoals': visitGoals.toList(),
-        // FHIR R4 QuestionnaireResponse.
+        'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
         'summary': summary,
       };

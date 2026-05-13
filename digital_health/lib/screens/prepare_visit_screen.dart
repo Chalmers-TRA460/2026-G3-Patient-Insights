@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
-import '../models/questionnaire_model.dart';
 import 'visit_prep_summary_screen.dart';
 
 class PrepareVisitScreen extends StatefulWidget {
@@ -14,430 +13,223 @@ class PrepareVisitScreen extends StatefulWidget {
 
 class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
   late final HealthController _c;
-  late final TextEditingController _titleController;
-  final Map<String, TextEditingController> _noteControllers = {};
-  late final PageController _pageController;
-  int _currentPage = 0;
-  static const int _totalPages = 5;
-
-  // Canonical English values stored in Firestore — display via translation key.
-  static const _durations = [
-    'Today', '2–3 days', 'About a week', 'A few weeks', 'Over a month',
-  ];
-  static const _durationKeys = {
-    'Today': 'prep.duration.today',
-    '2–3 days': 'prep.duration.few_days',
-    'About a week': 'prep.duration.week',
-    'A few weeks': 'prep.duration.weeks',
-    'Over a month': 'prep.duration.month',
-  };
-
-  static const _trends = ['Getting better', 'About the same', 'Getting worse'];
-  static const _trendKeys = {
-    'Getting better': 'prep.trend.better',
-    'About the same': 'prep.trend.same',
-    'Getting worse': 'prep.trend.worse',
-  };
-
-  static const _visitGoals = [
-    "Find out what's wrong",
-    'Get treatment or medication',
-    'Have test results explained',
-    'Review my medications',
-    'Get a referral',
-    'Just a routine check-up',
-  ];
-  static const _goalKeys = {
-    "Find out what's wrong": 'prep.goal.find_out',
-    'Get treatment or medication': 'prep.goal.treatment',
-    'Have test results explained': 'prep.goal.test_results',
-    'Review my medications': 'prep.goal.medications',
-    'Get a referral': 'prep.goal.referral',
-    'Just a routine check-up': 'prep.goal.checkup',
-  };
+  late final TextEditingController _reasonController;
+  final List<TextEditingController> _questionControllers = [];
 
   @override
   void initState() {
     super.initState();
     _c = Get.find<HealthController>();
-    _pageController = PageController();
-
-    for (final cat in kVisitTaxonomy) {
-      _noteControllers[cat.id] = TextEditingController();
-      for (final sub in cat.subQuestions) {
-        _noteControllers[sub.id] = TextEditingController();
-      }
-    }
 
     if (widget.editIndex != null) {
       _c.loadVisitPrepForEdit(widget.editIndex!);
-      _titleController = TextEditingController(text: _c.visitTitle.value);
-      for (final entry in _c.itemNotes.entries) {
-        _noteControllers[entry.key]?.text = entry.value;
+      _reasonController = TextEditingController(text: _c.visitTitle.value);
+      if (_c.visitQuestions.isEmpty) {
+        _questionControllers.add(TextEditingController());
+      } else {
+        for (final q in _c.visitQuestions) {
+          _questionControllers.add(TextEditingController(text: q));
+        }
       }
     } else {
       _c.clearVisitNotes();
-      _titleController = TextEditingController();
+      _reasonController = TextEditingController();
+      _questionControllers.add(TextEditingController());
     }
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _pageController.dispose();
-    for (final ctrl in _noteControllers.values) ctrl.dispose();
+    _reasonController.dispose();
+    for (final c in _questionControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  void _goToPage(int page) {
-    _pageController.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+  void _addQuestionField() {
+    setState(() {
+      _questionControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeQuestionField(int index) {
+    setState(() {
+      _questionControllers[index].dispose();
+      _questionControllers.removeAt(index);
+      if (_questionControllers.isEmpty) {
+        _questionControllers.add(TextEditingController());
+      }
+    });
+  }
+
+  void _syncToController() {
+    _c.visitTitle.value = _reasonController.text.trim();
+    _c.visitQuestions.assignAll(
+      _questionControllers
+          .map((c) => c.text.trim())
+          .where((q) => q.isNotEmpty)
+          .toList(),
     );
+  }
+
+  Future<void> _onSubmit() async {
+    _syncToController();
+    if (_c.visitTitle.value.isEmpty) {
+      Get.snackbar(
+        'snackbar.info'.tr,
+        'prep.error.no_reason'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+    await _c.submitQuestionnaire(editIndex: widget.editIndex);
+    if (_c.visitPrepSummary.value.isNotEmpty) {
+      final idx = widget.editIndex ?? 0;
+      Get.off(() => VisitPrepSummaryScreen(data: _c.visitPreps[idx]));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.editIndex != null;
+    final primary = Theme.of(context).primaryColor;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'prep.title.edit'.tr : 'prep.title.new'.tr),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(
-            value: (_currentPage + 1) / _totalPages,
-            backgroundColor: Colors.grey[200],
-          ),
-        ),
       ),
-      body: Column(
-        children: [
-          // Step dots
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_totalPages, (i) {
-                final active = i == _currentPage;
-                final done = i < _currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: active ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    color: done || active
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey[300],
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          // Pages
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (p) => setState(() => _currentPage = p),
-              children: [
-                _buildPageWrapper(
-                  title: 'prep.section.title'.tr,
-                  subtitle: 'prep.section.title_sub'.tr,
-                  child: TextField(
-                    controller: _titleController,
-                    onChanged: (v) => _c.visitTitle.value = v,
-                    decoration: InputDecoration(
-                      hintText: 'prep.section.title_hint'.tr,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                ),
-                _buildPageWrapper(
-                  title: 'prep.section.what_brings'.tr,
-                  subtitle: 'prep.section.what_brings_sub'.tr,
-                  child: Obx(() => Column(
-                        children: kVisitTaxonomy
-                            .map((cat) => _buildCategoryTile(cat, context))
-                            .toList(),
-                      )),
-                ),
-                _buildPageWrapper(
-                  title: 'prep.section.how_long'.tr,
-                  subtitle: 'prep.section.how_long_sub'.tr,
-                  child: Obx(() => _buildChoiceChips(
-                        options: _durations,
-                        selected: _c.duration.value,
-                        onTap: (v) => _c.duration.value = v,
-                        labelFor: (o) => (_durationKeys[o] ?? o).tr,
-                      )),
-                ),
-                _buildPageWrapper(
-                  title: 'prep.section.trend'.tr,
-                  child: Obx(() => _buildChoiceChips(
-                        options: _trends,
-                        selected: _c.symptomTrend.value,
-                        onTap: (v) => _c.symptomTrend.value = v,
-                        labelFor: (o) => (_trendKeys[o] ?? o).tr,
-                      )),
-                ),
-                _buildPageWrapper(
-                  title: 'prep.section.goals'.tr,
-                  subtitle: 'prep.section.goals_sub'.tr,
-                  child: Obx(() => _buildFilterChips(
-                        options: _visitGoals,
-                        selected: _c.visitGoals,
-                        onTap: _c.toggleVisitGoal,
-                        labelFor: (o) => (_goalKeys[o] ?? o).tr,
-                      )),
-                ),
-              ],
-            ),
-          ),
-
-          // Navigation buttons
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  if (_currentPage > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _goToPage(_currentPage - 1),
-                        child: const Text('Back'),
-                      ),
-                    ),
-                  if (_currentPage > 0) const SizedBox(width: 12),
-                  Expanded(
-                    child: _currentPage < _totalPages - 1
-                        ? ElevatedButton(
-                            onPressed: () => _goToPage(_currentPage + 1),
-                            child: const Text('Next'),
-                          )
-                        : Obx(() => ElevatedButton(
-                              onPressed: _c.isGeneratingSummary.value
-                                  ? null
-                                  : () async {
-                                      await _c.submitQuestionnaire(
-                                          editIndex: widget.editIndex);
-                                      if (_c.visitPrepSummary.value.isNotEmpty) {
-                                        final idx = widget.editIndex ?? 0;
-                                        Get.off(() => VisitPrepSummaryScreen(
-                                            data: _c.visitPreps[idx]));
-                                      }
-                                    },
-                              child: _c.isGeneratingSummary.value
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
-                                  : Text(isEditing
-                                      ? 'prep.btn.save'.tr
-                                      : 'prep.btn.done'.tr),
-                            )),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPageWrapper({
-    required String title,
-    String? subtitle,
-    required Widget child,
-  }) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(subtitle,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          ],
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryTile(VisitCategory cat, BuildContext context) {
-    final isSelected = _c.selectedCategories.contains(cat.id);
-    final isExpanded = _c.expandedCategories.contains(cat.id);
-    final accent = Theme.of(context).colorScheme.secondary; // green #2ECC71
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? accent : Colors.grey.withOpacity(0.25),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(11),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(11)),
-            onTap: () => _c.toggleCategory(cat.id),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (_) => _c.toggleCategory(cat.id),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'visit.cat.${cat.id}'.tr,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                        color: null,
-                      ),
-                    ),
-                  ),
-                  if (isSelected)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _c.toggleExpanded(cat.id),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          isExpanded
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Q1: Reason / title ───────────────────────────────────────
+            Text(
+              'prep.section.reason'.tr,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-          ),
-          if (isSelected)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: TextField(
-                controller: _noteControllers[cat.id],
-                onChanged: (v) => _c.setNote(cat.id, v),
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: 'prep.note.category'.tr,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
-                  isDense: true,
+            const SizedBox(height: 6),
+            Text(
+              'prep.section.reason_sub'.tr,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reasonController,
+              onChanged: (v) => _c.visitTitle.value = v.trim(),
+              decoration: InputDecoration(
+                hintText: 'prep.section.reason_hint'.tr,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 14),
+              ),
+              style: const TextStyle(fontSize: 16),
+              textInputAction: TextInputAction.next,
+            ),
+
+            const SizedBox(height: 28),
+
+            // ── Q2: Questions list ───────────────────────────────────────
+            Text(
+              'prep.section.questions'.tr,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'prep.section.questions_sub'.tr,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 14),
+
+            ...List.generate(_questionControllers.length, (i) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 30,
+                      child: Text(
+                        '${i + 1}.',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700]),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _questionControllers[i],
+                        decoration: InputDecoration(
+                          hintText: 'prep.section.questions_hint'.tr,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                        ),
+                        style: const TextStyle(fontSize: 16),
+                        textInputAction: TextInputAction.next,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline,
+                          color: Colors.redAccent),
+                      tooltip: 'prep.btn.remove_question'.tr,
+                      onPressed: () => _removeQuestionField(i),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _addQuestionField,
+                icon: Icon(Icons.add, color: primary),
+                label: Text('prep.btn.add_question'.tr,
+                    style: TextStyle(color: primary)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 12),
+                  side: BorderSide(color: primary),
                 ),
               ),
             ),
-          if (isExpanded) ...[
-            Divider(height: 1, indent: 16, endIndent: 16,
-                color: accent.withOpacity(0.3)),
-            ...cat.subQuestions.map((sub) => _buildSubQuestion(sub)),
-            const SizedBox(height: 4),
+
+            const SizedBox(height: 36),
+
+            // ── Submit ───────────────────────────────────────────────────
+            Obx(() => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        _c.isGeneratingSummary.value ? null : _onSubmit,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _c.isGeneratingSummary.value
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            isEditing
+                                ? 'prep.btn.save'.tr
+                                : 'prep.btn.done'.tr,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                  ),
+                )),
           ],
-        ],
+        ),
       ),
-      ),
-    );
-  }
-
-  Widget _buildSubQuestion(VisitSubQuestion sub) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'visit.sub.${sub.id}'.tr,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 4),
-          TextField(
-            controller: _noteControllers[sub.id],
-            onChanged: (v) => _c.setNote(sub.id, v),
-            decoration: InputDecoration(
-              hintText: 'prep.note.sub'.tr,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
-              isDense: true,
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips({
-    required List<String> options,
-    required RxList<String> selected,
-    required void Function(String) onTap,
-    String Function(String)? labelFor,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options
-          .map((o) => FilterChip(
-                label: Text(labelFor != null ? labelFor(o) : o),
-                selected: selected.contains(o),
-                onSelected: (_) => onTap(o),
-              ))
-          .toList(),
-    );
-  }
-
-  Widget _buildChoiceChips({
-    required List<String> options,
-    required String selected,
-    required void Function(String) onTap,
-    String Function(String)? labelFor,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options
-          .map((o) => ChoiceChip(
-                label: Text(labelFor != null ? labelFor(o) : o),
-                selected: selected == o,
-                onSelected: (_) => onTap(o),
-              ))
-          .toList(),
     );
   }
 }

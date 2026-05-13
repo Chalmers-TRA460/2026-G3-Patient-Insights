@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../controllers/settings_controller.dart';
+import '../models/quiz_question_model.dart';
+import '../services/ai_service.dart';
+import 'quiz_screen.dart';
 
 class ConsultationDetailScreen extends StatefulWidget {
   final Map<String, dynamic> consultation;
@@ -19,6 +23,8 @@ class ConsultationDetailScreen extends StatefulWidget {
 
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
+  bool _detailExpanded = false;
+  bool _isGeneratingQuiz = false;
 
   @override
   Widget build(BuildContext context) {
@@ -152,56 +158,28 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    if ((linkedPrep['selectedCategories'] as List? ?? [])
+                                    if ((linkedPrep['questions'] as List? ?? [])
                                         .isNotEmpty) ...[
                                       const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.what_brings'.tr),
+                                      _sectionLabel('summary.questions'.tr),
                                       const SizedBox(height: 6),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: List<String>.from(
-                                                linkedPrep['selectedCategories'])
-                                            .map((id) => _prepChip(
-                                                'visit.cat.$id'.tr))
-                                            .toList(),
-                                      ),
-                                    ],
-                                    if ((linkedPrep['duration'] as String? ?? '')
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.how_long'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(linkedPrep['duration'] as String,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              color: Color(0xFF9A3412),
-                                              height: 1.5)),
-                                    ],
-                                    if ((linkedPrep['symptomTrend'] as String? ?? '')
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.trend'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(linkedPrep['symptomTrend'] as String,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              color: Color(0xFF9A3412),
-                                              height: 1.5)),
-                                    ],
-                                    if ((linkedPrep['visitGoals'] as List? ?? [])
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      _sectionLabel('prep.section.goals'.tr),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        List<String>.from(linkedPrep['visitGoals'])
-                                            .join(', '),
-                                        style: const TextStyle(
-                                            fontSize: 15,
-                                            color: Color(0xFF9A3412),
-                                            height: 1.5),
-                                      ),
+                                      ...List<String>.from(
+                                              linkedPrep['questions'])
+                                          .asMap()
+                                          .entries
+                                          .map((e) => Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                        bottom: 4),
+                                                child: Text(
+                                                  '${e.key + 1}. ${e.value}',
+                                                  style: const TextStyle(
+                                                      fontSize: 15,
+                                                      color: Color(
+                                                          0xFF9A3412),
+                                                      height: 1.5),
+                                                ),
+                                              )),
                                     ],
                                   ] else ...[
                                     OutlinedButton.icon(
@@ -239,41 +217,189 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
               ),
               const SizedBox(height: 25),
 
-              // ── AI Summary Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              // ── AI Summary Card (conditional) ──
+              Builder(builder: (_) {
+                final briefSummary = visit['briefSummary'] as String? ?? '';
+                final detailedSummary = visit['detailedSummary'] as String? ?? '';
+                final legacySummary = visit['summary'] as String? ?? '';
+                final isGenerating = c.isSummarizingVisit.value;
+
+                if (isGenerating) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
                       children: [
-                        const Icon(Icons.auto_awesome_rounded,
+                        const CircularProgressIndicator(
                             color: Color(0xFF15803D)),
-                        const SizedBox(width: 10),
-                        Text('detail.ai_summary'.tr,
+                        const SizedBox(height: 16),
+                        Text('detail.generating'.tr,
                             style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                                 color: Color(0xFF15803D))),
                       ],
                     ),
-                    const SizedBox(height: 15),
-                    Text(
-                      visit['summary'] as String? ?? 'detail.no_summary'.tr,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          height: 1.6,
-                          color: Color(0xFF166534)),
+                  );
+                }
+
+                // New dual-level format
+                if (briefSummary.isNotEmpty || detailedSummary.isNotEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
                     ),
-                  ],
-                ),
-              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF15803D)),
+                            const SizedBox(width: 10),
+                            Text('detail.brief_label'.tr,
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF15803D))),
+                          ],
+                        ),
+                        if (briefSummary.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            briefSummary,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.7,
+                                color: Color(0xFF166534)),
+                          ),
+                        ],
+                        if (detailedSummary.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () => setState(
+                                () => _detailExpanded = !_detailExpanded),
+                            icon: Icon(
+                              _detailExpanded
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              color: const Color(0xFF15803D),
+                            ),
+                            label: Text(
+                              _detailExpanded
+                                  ? 'detail.show_less'.tr
+                                  : 'detail.read_more'.tr,
+                              style: const TextStyle(
+                                  color: Color(0xFF15803D),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: _detailExpanded
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Divider(
+                                          color: Color(0xFFBBF7D0),
+                                          height: 24),
+                                      Text(
+                                        'detail.full_label'.tr,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF15803D),
+                                            letterSpacing: 0.3),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        detailedSummary,
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            height: 1.7,
+                                            color: Color(0xFF166534)),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+
+                // Legacy format (single summary string)
+                if (legacySummary.isNotEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF15803D)),
+                            const SizedBox(width: 10),
+                            Text('detail.ai_summary'.tr,
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF15803D))),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        Text(
+                          legacySummary,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.7,
+                              color: Color(0xFF166534)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: Text('detail.generate_summary'.tr,
+                        style: const TextStyle(fontSize: 17)),
+                    onPressed: () => c.generateSummaryForVisit(widget.index),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF15803D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                );
+              }),
+
               const SizedBox(height: 25),
 
               // ── Full Conversation Card ──
@@ -312,12 +438,109 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // ── Test My Knowledge ──
+              Builder(builder: (_) {
+                final transcript = visit['transcript'] as String? ?? '';
+                if (transcript.isEmpty) return const SizedBox.shrink();
+
+                final storedQuiz = visit['quiz'] as List?;
+                final hasQuiz =
+                    storedQuiz != null && storedQuiz.isNotEmpty;
+
+                if (_isGeneratingQuiz) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(
+                            color: Color(0xFFD97706)),
+                        const SizedBox(height: 14),
+                        Text('quiz.generating'.tr,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF92400E))),
+                      ],
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: Icon(hasQuiz
+                        ? Icons.play_arrow_rounded
+                        : Icons.quiz_rounded),
+                    label: Text(
+                        hasQuiz
+                            ? 'quiz.take'.tr
+                            : 'detail.test_knowledge'.tr,
+                        style: const TextStyle(fontSize: 17)),
+                    onPressed: () => hasQuiz
+                        ? _openStoredQuiz(storedQuiz!)
+                        : _generateQuiz(c, transcript),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                );
+              }),
+
               const SizedBox(height: 40),
             ],
           ),
         );
       }),
     );
+  }
+
+  void _openStoredQuiz(List raw) {
+    final questions = raw
+        .whereType<Map<String, dynamic>>()
+        .map(QuizQuestion.fromJson)
+        .where((q) => q.question.isNotEmpty && q.options.length >= 2)
+        .toList();
+    if (questions.isNotEmpty) {
+      Get.to(() => QuizScreen(questions: questions));
+    }
+  }
+
+  Future<void> _generateQuiz(HealthController c, String transcript) async {
+    setState(() => _isGeneratingQuiz = true);
+    try {
+      final lang = Get.find<SettingsController>().resolvedLanguageName;
+      final questions = await AiService.generateVisitQuiz(
+        transcript,
+        patient: c.patient.value,
+        targetLanguage: lang,
+      );
+      if (questions.isEmpty) {
+        Get.snackbar('quiz.title'.tr, 'quiz.empty'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      await c.updateConsultation(widget.index, {
+        'quiz': questions.map((q) => q.toJson()).toList(),
+      });
+      Get.to(() => QuizScreen(questions: questions));
+    } catch (e) {
+      Get.snackbar('quiz.title'.tr, 'quiz.error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      setState(() => _isGeneratingQuiz = false);
+    }
   }
 
   void _pickVisitPrep(
@@ -426,20 +649,5 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
     );
   }
 
-  Widget _prepChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEDD5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFED7AA)),
-      ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF9A3412))),
-    );
-  }
 
 }

@@ -1,25 +1,38 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
+<<<<<<< HEAD
 import '../secrets.dart';
 
 class AiService {
   static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
+=======
+import '../models/quiz_question_model.dart';
+
+class AiService {
+  static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
+  static const String _openRouterUrl =
+      'https://openrouter.ai/api/v1/chat/completions';
+
+  static String get _groqKey => dotenv.env['GROQ_API_KEY'] ?? '';
+>>>>>>> 6708ae220cfda616a367da4476c8ff8bd982b365
   static const String _whisperUrl =
       'https://api.groq.com/openai/v1/audio/transcriptions';
 
   // ── 1. Whisper transcription ──────────────────────────────────────────────
   // Sends the recorded M4A file to Groq Whisper-large-v3 and returns text.
-  static Future<String> transcribeAudio(String filePath) async {
+  static Future<String> transcribeAudio(String filePath,
+      {String languageCode = 'en'}) async {
     final file = File(filePath);
     if (!file.existsSync()) throw Exception('Audio file not found: $filePath');
 
     final request = http.MultipartRequest('POST', Uri.parse(_whisperUrl))
       ..headers['Authorization'] = 'Bearer $kGroqKey'
       ..fields['model'] = 'whisper-large-v3'
-      ..fields['language'] = 'en'
+      ..fields['language'] = languageCode
       ..fields['response_format'] = 'text'
       ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
@@ -31,28 +44,41 @@ class AiService {
   }
 
   // ── 2. Consultation summarisation ────────────────────────────────────────
-  // Transcript (from Whisper) + patient profile → plain-language summary.
-  static Future<String> summarizeConsultation(
+  // Transcript + patient profile → dual-level summary (brief + detailed).
+  // Returns a map with keys 'brief_actionable' and 'detailed_personalized'.
+  static Future<Map<String, String>> summarizeConsultation(
     String transcript, {
     Patient? patient,
-    String duration = '',
-    String symptomTrend = '',
-    List<String> visitGoals = const [],
+    String reason = '',
+    List<String> questions = const [],
+    String targetLanguage = 'English',
   }) async {
     final patientContext = _buildPatientContext(patient);
 
+    final cleanQuestions =
+        questions.map((q) => q.trim()).where((q) => q.isNotEmpty).toList();
     final preVisit = [
-      if (duration.isNotEmpty) 'Duration of symptoms: $duration',
-      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
-      if (visitGoals.isNotEmpty) 'Patient wanted to: ${visitGoals.join(', ')}',
+      if (reason.isNotEmpty) 'Reason for the visit: $reason',
+      if (cleanQuestions.isNotEmpty)
+        'Patient\'s questions:\n${cleanQuestions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}',
     ].join('\n');
 
     final prompt = '''
 You are a medical communication assistant. A patient just finished a doctor's appointment.
-Summarise the consultation in clear, warm, plain language the patient can easily understand.
-Use "you" and "your". Avoid jargon — explain any medical terms in brackets.
 
-Structure your summary with these four sections:
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these two keys:
+
+{
+  "brief_actionable": "...",
+  "detailed_personalized": "..."
+}
+
+brief_actionable: A scannable bullet list using • bullets containing ONLY:
+1. Medication changes (new, changed, or stopped medications with doses)
+2. Next steps (follow-up appointments, tests, referrals, actions to take at home)
+Readable in under 10 seconds. No explanations or summaries. If there are no changes or next steps, write "• No changes or follow-up needed."
+
+detailed_personalized: A warm, plain-language full summary in $targetLanguage using "you" and "your". Explain medical terms in brackets. Structure with these four sections:
 1. What the doctor found
 2. Changes to medications or treatment
 3. Next steps and follow-up
@@ -64,7 +90,21 @@ Consultation transcript:
 $transcript
 ''';
 
-    return _callNemotron(prompt);
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+      return {
+        'brief_actionable': (decoded['brief_actionable'] as String? ?? '').trim(),
+        'detailed_personalized': (decoded['detailed_personalized'] as String? ?? '').trim(),
+      };
+    } catch (_) {
+      return {'brief_actionable': '', 'detailed_personalized': raw.trim()};
+    }
   }
 
   // ── 3. AI health Q&A ─────────────────────────────────────────────────────
@@ -86,29 +126,96 @@ Patient question: $question
   }
 
   // ── 4. Pre-visit summary ─────────────────────────────────────────────────
+  // Takes the patient's reason and a list of questions; returns a short,
+  // plain-language confirmation paragraph (1–2 sentences).
   static Future<String> summarizeVisitPrep({
-    String visitContext = '',
-    String duration = '',
-    String symptomTrend = '',
-    List<String> visitGoals = const [],
+    required String reason,
+    List<String> questions = const [],
+    String targetLanguage = 'English',
   }) async {
-    final answers = [
-      if (visitContext.isNotEmpty) 'Symptoms / concerns:\n$visitContext',
-      if (duration.isNotEmpty) 'How long: $duration',
-      if (symptomTrend.isNotEmpty) 'Getting better or worse: $symptomTrend',
-      if (visitGoals.isNotEmpty) 'What they want from the visit: ${visitGoals.join(', ')}',
-    ].join('\n');
+    final cleanQuestions =
+        questions.map((q) => q.trim()).where((q) => q.isNotEmpty).toList();
+
+    final qBlock = cleanQuestions.isEmpty
+        ? '(none)'
+        : cleanQuestions
+            .asMap()
+            .entries
+            .map((e) => '${e.key + 1}. ${e.value}')
+            .join('\n');
 
     final prompt = '''
-A patient filled in a short pre-appointment questionnaire.
-Write 2–3 warm, plain sentences summarising their situation so they can confirm it sounds right.
-Use "you" and "your". No medical jargon. Be reassuring.
+A patient prepared notes before a doctor's visit.
 
-Questionnaire answers:
-$answers
+Reason for the visit:
+$reason
+
+Questions the patient plans to ask:
+$qBlock
+
+Write 1–2 short, plain sentences in $targetLanguage so the patient can confirm it sounds right.
+Use "you" and "your". No medical jargon. Be precise and reassuring.
 ''';
 
     return _callNemotron(prompt);
+  }
+
+  // ── 5. Knowledge-check quiz ───────────────────────────────────────────────
+  // Transcript + patient profile → list of quiz questions (5 items).
+  static Future<List<QuizQuestion>> generateVisitQuiz(
+    String transcript, {
+    Patient? patient,
+    String targetLanguage = 'English',
+  }) async {
+    final patientContext = _buildPatientContext(patient);
+
+    final prompt = '''
+You are a medical education assistant helping a patient check what they understood from their doctor's visit.
+
+Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly 5 objects.
+
+Each object must have exactly these four keys:
+{
+  "question": "...",
+  "options": ["...", "...", "...", "..."],
+  "correctIndex": 0,
+  "explanation": "..."
+}
+
+STRICT GROUNDING RULE (mandatory):
+For any question about medications, dosages, next steps, tests, or follow-up appointments, you MUST base the question ONLY on information explicitly spoken in the transcript. If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details. Never substitute standard medical timelines or typical clinical practice for what was actually said.
+
+LIFESTYLE FLEXIBILITY (limited exception):
+You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+
+Additional rules:
+- Each question must have exactly 4 options.
+- correctIndex is the zero-based index of the correct option.
+- explanation is 1–2 sentences in plain language.
+- Do NOT ask about diagnoses or test results — only actionable items the patient must remember.
+- Write all text in $targetLanguage.
+
+$patientContext
+Consultation transcript:
+$transcript
+''';
+
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(QuizQuestion.fromJson)
+          .where((q) => q.question.isNotEmpty && q.options.length >= 2)
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

@@ -5,6 +5,16 @@ class SettingsController extends GetxController {
   final RxString localeCode = RxString(Get.locale?.languageCode ?? 'en');
   final RxBool isAccessibilityMode = false.obs;
 
+  String get resolvedLanguageCode {
+    if (localeCode.value == 'default') {
+      return Get.deviceLocale?.languageCode ?? 'en';
+    }
+    return localeCode.value;
+  }
+
+  String get resolvedLanguageName =>
+      resolvedLanguageCode == 'sv' ? 'Swedish' : 'English';
+
   String get ttsLanguage {
     final code = localeCode.value == 'default'
         ? (Get.deviceLocale?.languageCode ?? 'en')
