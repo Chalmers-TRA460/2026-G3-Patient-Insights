@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -97,18 +98,27 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        isLoading.value = false;
-        return;
+
+      if (kIsWeb) {
+        // Web: Firebase popup flow — no extra setup needed in index.html
+        final provider = GoogleAuthProvider();
+        await _auth.signInWithPopup(provider);
+      } else {
+        // Mobile: google_sign_in package
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          isLoading.value = false;
+          return;
+        }
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        await _auth.signInWithCredential(credential);
       }
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await _auth.signInWithCredential(credential);
+
       Get.offAllNamed('/');
     } catch (e) {
       errorMessage.value = 'Google Sign-In failed: $e';
