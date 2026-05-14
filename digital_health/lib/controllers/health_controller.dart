@@ -17,6 +17,7 @@ class HealthController extends GetxController {
   RxList<Map<String, dynamic>> consultations = <Map<String, dynamic>>[].obs;
   RxBool isLoading = false.obs;
   RxBool isSummarizingVisit = false.obs;
+  RxBool isRegeneratingDetailed = false.obs;
 
   // ── Family / caregiver view ───────────────────────────────────────────────
 
@@ -162,6 +163,71 @@ class HealthController extends GetxController {
     } finally {
       isSummarizingVisit.value = false;
     }
+  }
+
+  // Save a patient-edited brief summary and regenerate the detailed version
+  // from the corrected brief + original transcript. The previous brief is
+  // pushed onto a rolling briefHistory (cap = 3) so the patient can revert
+  // an accidental edit.
+  Future<void> editBriefSummary(int index, String newBrief) async {
+    if (index < 0 || index >= consultations.length) return;
+    final visit = consultations[index];
+    final previousBrief = (visit['briefSummary'] as String? ?? '').trim();
+    final transcript = visit['transcript'] as String? ?? '';
+
+    final history = List<Map<String, dynamic>>.from(
+        (visit['briefHistory'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)));
+    if (previousBrief.isNotEmpty) {
+      history.insert(0, {
+        'text': previousBrief,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      while (history.length > 3) {
+        history.removeLast();
+      }
+    }
+
+    isRegeneratingDetailed.value = true;
+    try {
+      final targetLanguage =
+          Get.find<SettingsController>().resolvedLanguageName;
+      final newDetailed = await AiService.regenerateDetailedFromBrief(
+        editedBrief: newBrief,
+        transcript: transcript,
+        patient: patient.value,
+        targetLanguage: targetLanguage,
+      );
+
+      await updateConsultation(index, {
+        'briefSummary': newBrief,
+        'detailedSummary': newDetailed,
+        'briefHistory': history,
+      });
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to update summary: $e');
+    } finally {
+      isRegeneratingDetailed.value = false;
+    }
+  }
+
+  // Restore a prior brief from history. The currently-visible brief is pushed
+  // onto history first (so the restore can itself be undone), then the chosen
+  // version becomes the new brief and the detailed summary is regenerated.
+  Future<void> restoreBriefVersion(int consultationIndex, int historyIndex) async {
+    if (consultationIndex < 0 || consultationIndex >= consultations.length) {
+      return;
+    }
+    final visit = consultations[consultationIndex];
+    final history = List<Map<String, dynamic>>.from(
+        (visit['briefHistory'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)));
+    if (historyIndex < 0 || historyIndex >= history.length) return;
+    final restored = (history[historyIndex]['text'] as String? ?? '').trim();
+    if (restored.isEmpty) return;
+    await editBriefSummary(consultationIndex, restored);
   }
 
   Future<void> updateConsultation(int index, Map<String, dynamic> fields) async {
