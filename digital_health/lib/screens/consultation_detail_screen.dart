@@ -25,6 +25,14 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
   bool _detailExpanded = false;
   bool _isGeneratingQuiz = false;
+  bool _editingBrief = false;
+  final TextEditingController _briefController = TextEditingController();
+
+  @override
+  void dispose() {
+    _briefController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +230,12 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                 final briefSummary = visit['briefSummary'] as String? ?? '';
                 final detailedSummary = visit['detailedSummary'] as String? ?? '';
                 final legacySummary = visit['summary'] as String? ?? '';
+                final history = List<Map<String, dynamic>>.from(
+                    (visit['briefHistory'] as List? ?? const [])
+                        .whereType<Map>()
+                        .map((e) => Map<String, dynamic>.from(e)));
                 final isGenerating = c.isSummarizingVisit.value;
+                final isRegenerating = c.isRegeneratingDetailed.value;
 
                 if (isGenerating) {
                   return Container(
@@ -266,28 +279,159 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                             const Icon(Icons.auto_awesome_rounded,
                                 color: Color(0xFF15803D)),
                             const SizedBox(width: 10),
-                            Text('detail.brief_label'.tr,
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF15803D))),
+                            Expanded(
+                              child: Text('detail.brief_label'.tr,
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF15803D))),
+                            ),
+                            if (history.isNotEmpty && !_editingBrief)
+                              _editedBadge(),
                           ],
                         ),
-                        if (briefSummary.isNotEmpty) ...[
+
+                        // Brief: view mode or edit mode
+                        if (_editingBrief) ...[
                           const SizedBox(height: 14),
-                          Text(
-                            briefSummary,
+                          TextField(
+                            controller: _briefController,
+                            maxLines: null,
+                            minLines: 4,
                             style: const TextStyle(
                                 fontSize: 16,
                                 height: 1.7,
                                 color: Color(0xFF166534)),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.all(14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFBBF7D0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFBBF7D0)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF15803D), width: 2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'detail.edit_hint'.tr,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF15803D),
+                                fontStyle: FontStyle.italic),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: isRegenerating
+                                    ? null
+                                    : () => setState(() {
+                                          _editingBrief = false;
+                                          _briefController.clear();
+                                        }),
+                                child: Text('detail.cancel'.tr,
+                                    style: const TextStyle(fontSize: 15)),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: isRegenerating
+                                    ? null
+                                    : () => _confirmAndSaveBrief(c),
+                                icon: const Icon(Icons.check_rounded, size: 18),
+                                label: Text('detail.save'.tr,
+                                    style: const TextStyle(fontSize: 15)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF15803D),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else if (briefSummary.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text.rich(
+                            TextSpan(
+                              children: _parseInlineBold(
+                                briefSummary,
+                                const TextStyle(
+                                    fontSize: 16,
+                                    height: 1.7,
+                                    color: Color(0xFF166534)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: isRegenerating
+                                    ? null
+                                    : () => setState(() {
+                                          _briefController.text = briefSummary;
+                                          _editingBrief = true;
+                                        }),
+                                icon: const Icon(Icons.edit_rounded, size: 16),
+                                label: Text('detail.edit_brief'.tr,
+                                    style: const TextStyle(fontSize: 14)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF15803D),
+                                  side: const BorderSide(
+                                      color: Color(0xFF15803D)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (history.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: isRegenerating
+                                      ? null
+                                      : () => _showHistorySheet(c, history),
+                                  icon: const Icon(Icons.history_rounded,
+                                      size: 16,
+                                      color: Color(0xFF15803D)),
+                                  label: Text(
+                                      'detail.previous_versions'.tr,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF15803D),
+                                          fontWeight: FontWeight.w600)),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
-                        if (detailedSummary.isNotEmpty) ...[
+
+                        if (detailedSummary.isNotEmpty ||
+                            isRegenerating) ...[
                           const SizedBox(height: 12),
                           TextButton.icon(
-                            onPressed: () => setState(
-                                () => _detailExpanded = !_detailExpanded),
+                            onPressed: isRegenerating
+                                ? null
+                                : () => setState(
+                                    () => _detailExpanded = !_detailExpanded),
                             icon: Icon(
                               _detailExpanded
                                   ? Icons.expand_less_rounded
@@ -326,14 +470,11 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                             color: Color(0xFF15803D),
                                             letterSpacing: 0.3),
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        detailedSummary,
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            height: 1.7,
-                                            color: Color(0xFF166534)),
-                                      ),
+                                      const SizedBox(height: 12),
+                                      if (isRegenerating)
+                                        _regeneratingDetailedBox()
+                                      else
+                                        _buildDetailedSections(detailedSummary),
                                     ],
                                   )
                                 : const SizedBox.shrink(),
@@ -649,5 +790,307 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
     );
   }
 
+  Widget _editedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFBBF7D0),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'detail.edited_badge'.tr,
+        style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF166534),
+            letterSpacing: 0.3),
+      ),
+    );
+  }
 
+  Widget _regeneratingDetailedBox() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      width: double.infinity,
+      child: Column(
+        children: [
+          const CircularProgressIndicator(color: Color(0xFF15803D)),
+          const SizedBox(height: 12),
+          Text('detail.regenerating_detailed'.tr,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF15803D))),
+        ],
+      ),
+    );
+  }
+
+  // Splits the detailed summary into blocks separated by blank lines, treats
+  // any leading line wrapped in **...** as a section heading, and renders
+  // the rest as body paragraphs. Inline **bold** within body text is parsed
+  // into bold spans so the asterisks never leak into the rendered output.
+  Widget _buildDetailedSections(String text) {
+    final blocks = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((b) => b.trim())
+        .where((b) => b.isNotEmpty)
+        .toList();
+
+    final lineHeadingPattern = RegExp(r'^\*\*\s*(.+?)\s*\*\*\s*$');
+    final widgets = <Widget>[];
+    bool firstHeadingSeen = false;
+
+    for (final block in blocks) {
+      final lines = block.split('\n');
+      String? heading;
+      String body = block;
+
+      final headingMatch = lineHeadingPattern.firstMatch(lines.first.trim());
+      if (headingMatch != null) {
+        heading = headingMatch.group(1);
+        body = lines.skip(1).join('\n').trim();
+      }
+
+      if (heading != null) {
+        if (firstHeadingSeen) {
+          widgets.add(const SizedBox(height: 18));
+        } else {
+          firstHeadingSeen = true;
+        }
+        widgets.add(Text(
+          heading,
+          style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF15803D),
+              height: 1.4),
+        ));
+        if (body.isNotEmpty) widgets.add(const SizedBox(height: 6));
+      } else if (widgets.isNotEmpty && widgets.last is! SizedBox) {
+        widgets.add(const SizedBox(height: 10));
+      }
+
+      if (body.isNotEmpty) {
+        const bodyStyle = TextStyle(
+            fontSize: 16, height: 1.7, color: Color(0xFF166534));
+        widgets.add(Text.rich(
+          TextSpan(children: _parseInlineBold(body, bodyStyle)),
+        ));
+      }
+    }
+
+    if (widgets.isEmpty) {
+      return Text(
+        text,
+        style: const TextStyle(
+            fontSize: 16, height: 1.7, color: Color(0xFF166534)),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  // Tokenises a string on **...** pairs and returns spans where the wrapped
+  // text is bold. Unmatched ** at the end is preserved as-is.
+  List<TextSpan> _parseInlineBold(String text, TextStyle baseStyle) {
+    final pattern = RegExp(r'\*\*(.+?)\*\*', dotAll: true);
+    final spans = <TextSpan>[];
+    int cursor = 0;
+    for (final m in pattern.allMatches(text)) {
+      if (m.start > cursor) {
+        spans.add(TextSpan(
+            text: text.substring(cursor, m.start), style: baseStyle));
+      }
+      spans.add(TextSpan(
+        text: m.group(1),
+        style: baseStyle.copyWith(fontWeight: FontWeight.bold),
+      ));
+      cursor = m.end;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor), style: baseStyle));
+    }
+    return spans;
+  }
+
+  Future<void> _confirmAndSaveBrief(HealthController c) async {
+    final newBrief = _briefController.text.trim();
+    if (newBrief.isEmpty) {
+      Get.snackbar('snackbar.info'.tr, 'detail.brief_label'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text('detail.confirm_save_title'.tr,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('detail.confirm_save_body'.tr,
+            style: const TextStyle(fontSize: 15, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('detail.cancel'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF15803D),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('detail.save'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _editingBrief = false;
+      _detailExpanded = true; // so the patient sees the new detailed text
+    });
+
+    await c.editBriefSummary(widget.index, newBrief);
+    _briefController.clear();
+  }
+
+  Future<void> _showHistorySheet(
+      HealthController c, List<Map<String, dynamic>> history) async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('detail.previous_versions_title'.tr,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('detail.previous_versions_subtitle'.tr,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            const SizedBox(height: 12),
+            const Divider(),
+            if (history.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text('detail.no_previous_versions'.tr,
+                      style: TextStyle(color: Colors.grey[600])),
+                ),
+              )
+            else
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) => const Divider(height: 16),
+                  itemBuilder: (_, i) {
+                    final entry = history[i];
+                    final text = (entry['text'] as String? ?? '').trim();
+                    final ts = entry['timestamp'] as String? ?? '';
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        text,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 15, height: 1.5),
+                      ),
+                      subtitle: ts.isEmpty
+                          ? null
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(_formatTimestamp(ts),
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.grey[600])),
+                            ),
+                      trailing: ElevatedButton.icon(
+                        onPressed: () =>
+                            _confirmAndRestore(c, i),
+                        icon: const Icon(Icons.restore_rounded, size: 16),
+                        label: Text('detail.restore'.tr,
+                            style: const TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF15803D),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndRestore(HealthController c, int historyIndex) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text('detail.confirm_restore_title'.tr,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('detail.confirm_restore_body'.tr,
+            style: const TextStyle(fontSize: 15, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('detail.cancel'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF15803D),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('detail.restore'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    Get.back(); // close the bottom sheet
+    setState(() => _detailExpanded = true);
+    await c.restoreBriefVersion(widget.index, historyIndex);
+  }
+
+  String _formatTimestamp(String iso) {
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    final local = dt.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)}  '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
 }

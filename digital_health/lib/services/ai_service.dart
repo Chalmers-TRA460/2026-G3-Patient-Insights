@@ -73,11 +73,20 @@ brief_actionable: A scannable bullet list using • bullets containing ONLY:
 2. Next steps (follow-up appointments, tests, referrals, actions to take at home)
 Readable in under 10 seconds. No explanations or summaries. If there are no changes or next steps, write "• No changes or follow-up needed."
 
-detailed_personalized: A warm, plain-language full summary in $targetLanguage using "you" and "your". Explain medical terms in brackets. Structure with these four sections:
-1. What the doctor found
-2. Changes to medications or treatment
-3. Next steps and follow-up
-4. Answers to the patient's questions
+detailed_personalized: A warm, plain-language full summary in $targetLanguage using "you" and "your". Explain medical terms in brackets.
+
+Structure it as EXACTLY four sections. Each section must begin with a bold heading on its own line, written in $targetLanguage, in this exact form (use literal Markdown asterisks):
+**1. What the doctor found**
+**2. Changes to medications or treatment**
+**3. Next steps and follow-up**
+**4. Answers to your questions**
+
+Formatting rules (mandatory):
+- Put a blank line (two consecutive newlines, "\\n\\n") AFTER each heading.
+- Put a blank line BETWEEN sections (i.e., before the next heading).
+- Write each section's body as one or more short paragraphs separated by blank lines.
+- Do NOT join sections together without blank lines.
+- Translate the section headings into $targetLanguage but keep the numbering 1.–4. and the surrounding ** bold markers.
 
 $patientContext
 ${preVisit.isNotEmpty ? 'Pre-visit notes:\n$preVisit\n' : ''}
@@ -100,6 +109,55 @@ $transcript
     } catch (_) {
       return {'brief_actionable': '', 'detailed_personalized': raw.trim()};
     }
+  }
+
+  // ── 2b. Regenerate detailed summary from an edited brief ─────────────────
+  // After the patient (with the doctor) corrects the brief actionable summary,
+  // the detailed narrative needs to be rewritten so it agrees with the
+  // verified brief. Both the corrected brief AND the original transcript are
+  // used as inputs — the brief is treated as ground truth for facts; the
+  // transcript provides context for the narrative.
+  static Future<String> regenerateDetailedFromBrief({
+    required String editedBrief,
+    required String transcript,
+    Patient? patient,
+    String targetLanguage = 'English',
+  }) async {
+    final patientContext = _buildPatientContext(patient);
+
+    final prompt = '''
+You are a medical communication assistant. A patient has just reviewed the brief summary of their doctor's visit WITH the doctor and corrected any errors. Your job is to rewrite the detailed narrative so it agrees with the corrected brief.
+
+Return ONLY the detailed summary text in $targetLanguage. No JSON, no code fences, no preamble.
+
+Treat the CORRECTED BRIEF as the source of truth for facts (medications, doses, next steps, follow-up). If the transcript disagrees with the brief, the brief wins. Use the transcript only to add plain-language context, reasons, and the doctor's reasoning around those facts.
+
+Write a warm, plain-language full summary using "you" and "your". Explain medical terms in brackets.
+
+Structure it as EXACTLY four sections. Each section must begin with a bold heading on its own line, written in $targetLanguage, in this exact form (use literal Markdown asterisks):
+**1. What the doctor found**
+**2. Changes to medications or treatment**
+**3. Next steps and follow-up**
+**4. Answers to your questions**
+
+Formatting rules (mandatory):
+- Put a blank line (two consecutive newlines, "\\n\\n") AFTER each heading.
+- Put a blank line BETWEEN sections.
+- Write each section's body as one or more short paragraphs separated by blank lines.
+- Do NOT join sections together without blank lines.
+- Translate the section headings into $targetLanguage but keep the numbering 1.–4. and the ** bold markers.
+
+$patientContext
+
+Corrected brief (source of truth):
+$editedBrief
+
+Original consultation transcript (context only):
+$transcript
+''';
+
+    final raw = await _callNemotron(prompt);
+    return raw.trim();
   }
 
   // ── 3. AI health Q&A ─────────────────────────────────────────────────────

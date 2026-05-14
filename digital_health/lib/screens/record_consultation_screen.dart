@@ -49,7 +49,52 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   // ── Recording ─────────────────────────────────────────────────────────────
 
+  Future<bool> _askConsent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.privacy_tip_rounded, color: Colors.blue),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('record.consent_title'.tr,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+          ],
+        ),
+        content: Text('record.consent_body'.tr,
+            style: const TextStyle(fontSize: 15, height: 1.5)),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('record.consent_cancel'.tr,
+                style: const TextStyle(fontSize: 15)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: Text('record.consent_confirm'.tr,
+                style: const TextStyle(fontSize: 15)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _startRecording() async {
+    final consented = await _askConsent();
+    if (!consented) return;
+
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       setState(() => _errorMessage = 'Microphone permission denied.');
@@ -273,85 +318,122 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   // idle ─────────────────────────────────────────────────────────────────────
   Widget _buildIdle() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.mic_none_rounded, size: 80, color: Colors.blueGrey),
-        const SizedBox(height: 24),
-        const Text('Tap to start recording',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text(
-          'Record your consultation, then Whisper will transcribe it\nand the AI will summarise it for you.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, color: Colors.grey),
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.mic_none_rounded, size: 80, color: Colors.blueGrey),
+            const SizedBox(height: 24),
+            const Text('Tap to start recording',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+              'Record your consultation, then Whisper will transcribe it\nand the AI will summarise it for you.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.privacy_tip_rounded,
+                      size: 18, color: Color(0xFF1D4ED8)),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'record.consent_reminder'.tr,
+                      style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF1D4ED8),
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_errorMessage.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Text(_errorMessage,
+                  style: const TextStyle(color: Colors.red, fontSize: 14),
+                  textAlign: TextAlign.center),
+            ],
+            const SizedBox(height: 40),
+            FloatingActionButton.large(
+              heroTag: 'start',
+              onPressed: _startRecording,
+              backgroundColor: Colors.blue,
+              child: const Icon(Icons.mic, color: Colors.white, size: 36),
+            ),
+          ],
         ),
-        if (_errorMessage.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Text(_errorMessage,
-              style: const TextStyle(color: Colors.red, fontSize: 14),
-              textAlign: TextAlign.center),
-        ],
-        const SizedBox(height: 40),
-        FloatingActionButton.large(
-          heroTag: 'start',
-          onPressed: _startRecording,
-          backgroundColor: Colors.blue,
-          child: const Icon(Icons.mic, color: Colors.white, size: 36),
-        ),
-      ],
+      ),
     );
   }
 
   // recording ────────────────────────────────────────────────────────────────
   Widget _buildRecording() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.red.withOpacity(0.4)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                    color: Colors.red, shape: BoxShape.circle),
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.red.withOpacity(0.4)),
               ),
-              const SizedBox(width: 10),
-              const Text('RECORDING',
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5)),
-            ],
-          ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: const BoxDecoration(
+                        color: Colors.red, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text('RECORDING',
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(_timerLabel,
+                style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('Speak naturally — recording continuously',
+                style: TextStyle(fontSize: 15, color: Colors.grey)),
+            const SizedBox(height: 48),
+            FloatingActionButton.large(
+              heroTag: 'stop',
+              onPressed: _stopRecording,
+              backgroundColor: Colors.red,
+              child: const Icon(Icons.stop_rounded, color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 16),
+            const Text('Tap to stop',
+                style: TextStyle(fontSize: 14, color: Colors.grey)),
+          ],
         ),
-        const SizedBox(height: 24),
-        Text(_timerLabel,
-            style: const TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Speak naturally — recording continuously',
-            style: TextStyle(fontSize: 15, color: Colors.grey)),
-        const SizedBox(height: 48),
-        FloatingActionButton.large(
-          heroTag: 'stop',
-          onPressed: _stopRecording,
-          backgroundColor: Colors.red,
-          child: const Icon(Icons.stop_rounded, color: Colors.white, size: 36),
-        ),
-        const SizedBox(height: 16),
-        const Text('Tap to stop',
-            style: TextStyle(fontSize: 14, color: Colors.grey)),
-      ],
+      ),
     );
   }
 
