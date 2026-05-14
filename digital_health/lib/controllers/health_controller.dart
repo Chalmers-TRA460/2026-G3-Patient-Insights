@@ -169,6 +169,11 @@ class HealthController extends GetxController {
   // from the corrected brief + original transcript. The previous brief is
   // pushed onto a rolling briefHistory (cap = 3) so the patient can revert
   // an accidental edit.
+  //
+  // The brief + history are persisted BEFORE the regeneration call so the
+  // patient sees their edit reflected immediately while the spinner runs on
+  // the detailed version — otherwise the UI would keep showing the old brief
+  // for the duration of the AI call.
   Future<void> editBriefSummary(int index, String newBrief) async {
     if (index < 0 || index >= consultations.length) return;
     final visit = consultations[index];
@@ -189,7 +194,14 @@ class HealthController extends GetxController {
       }
     }
 
+    // Optimistic save: brief + history land in Firestore/local state right
+    // away. The spinner takes over the detailed area until regen completes.
     isRegeneratingDetailed.value = true;
+    await updateConsultation(index, {
+      'briefSummary': newBrief,
+      'briefHistory': history,
+    });
+
     try {
       final targetLanguage =
           Get.find<SettingsController>().resolvedLanguageName;
@@ -201,9 +213,7 @@ class HealthController extends GetxController {
       );
 
       await updateConsultation(index, {
-        'briefSummary': newBrief,
         'detailedSummary': newDetailed,
-        'briefHistory': history,
       });
     } catch (e) {
       Get.snackbar('snackbar.error'.tr, 'Failed to update summary: $e');

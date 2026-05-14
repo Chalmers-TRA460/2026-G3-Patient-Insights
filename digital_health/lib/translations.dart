@@ -204,6 +204,11 @@ class AppTranslations extends Translations {
       'record.btn.save_transcript': 'Save Transcript Only',
       'record.success': 'Visit summary saved to history!',
       'record.doctor': 'Doctor Visit',
+      'record.consent_reminder': 'Please ask your doctor before you start recording.',
+      'record.consent_title': 'Get consent before recording',
+      'record.consent_body': 'Recording a medical visit without your doctor\'s permission may not be allowed.\n\nPlease ask your doctor first and make sure they agree to be recorded.',
+      'record.consent_confirm': 'I have permission',
+      'record.consent_cancel': 'Not yet',
 
       // ── Knowledge quiz ───────────────────────────────────────────────────
       'quiz.title': 'Knowledge Check',
@@ -522,6 +527,11 @@ class AppTranslations extends Translations {
       'record.btn.save_transcript': 'Spara transkript',
       'record.success': 'Besökssammanfattning sparad!',
       'record.doctor': 'Läkarbesök',
+      'record.consent_reminder': 'Fråga din läkare innan du börjar spela in.',
+      'record.consent_title': 'Få samtycke innan inspelning',
+      'record.consent_body': 'Att spela in ett läkarbesök utan din läkares tillstånd kan vara otillåtet.\n\nFråga först din läkare och säkerställ att de godkänner att bli inspelade.',
+      'record.consent_confirm': 'Jag har tillstånd',
+      'record.consent_cancel': 'Inte än',
 
       // ── Knowledge quiz ───────────────────────────────────────────────────
       'quiz.title': 'Kunskapskontroll',
