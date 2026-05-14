@@ -1,15 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/patient_model.dart';
-<<<<<<< HEAD
-import '../secrets.dart';
-
-class AiService {
-  static const String _openRouterUrl =
-      'https://openrouter.ai/api/v1/chat/completions';
-=======
 import '../models/quiz_question_model.dart';
 
 class AiService {
@@ -18,23 +11,25 @@ class AiService {
       'https://openrouter.ai/api/v1/chat/completions';
 
   static String get _groqKey => dotenv.env['GROQ_API_KEY'] ?? '';
->>>>>>> 6708ae220cfda616a367da4476c8ff8bd982b365
   static const String _whisperUrl =
       'https://api.groq.com/openai/v1/audio/transcriptions';
 
   // ── 1. Whisper transcription ──────────────────────────────────────────────
-  // Sends the recorded M4A file to Groq Whisper-large-v3 and returns text.
-  static Future<String> transcribeAudio(String filePath,
+  // Accepts raw audio bytes — works on both mobile and web.
+  static Future<String> transcribeAudio(Uint8List audioBytes,
       {String languageCode = 'en'}) async {
-    final file = File(filePath);
-    if (!file.existsSync()) throw Exception('Audio file not found: $filePath');
+    if (audioBytes.isEmpty) throw Exception('Audio data is empty');
 
     final request = http.MultipartRequest('POST', Uri.parse(_whisperUrl))
-      ..headers['Authorization'] = 'Bearer $kGroqKey'
+      ..headers['Authorization'] = 'Bearer $_groqKey'
       ..fields['model'] = 'whisper-large-v3'
       ..fields['language'] = languageCode
       ..fields['response_format'] = 'text'
-      ..files.add(await http.MultipartFile.fromPath('file', filePath));
+      ..files.add(http.MultipartFile.fromBytes(
+        'file',
+        audioBytes,
+        filename: 'audio.m4a',
+      ));
 
     final streamed = await request.send();
     final body = await streamed.stream.bytesToString();
@@ -244,7 +239,7 @@ Patient profile:
       final response = await http.post(
         Uri.parse(_openRouterUrl),
         headers: {
-          'Authorization': 'Bearer $kOpenRouterKey',
+          'Authorization': 'Bearer $_openRouterKey',
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://patientinsights.chalmers.se',
           'X-Title': 'Patient Insights',

@@ -1,10 +1,12 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
@@ -31,6 +33,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   _Stage _stage = _Stage.idle;
   String? _audioPath;
+  Uint8List? _audioBytes;
   String _errorMessage = '';
 
   Timer? _timer;
@@ -53,9 +56,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       return;
     }
 
-    final dir = await getTemporaryDirectory();
-    _audioPath =
-        '${dir.path}/consultation_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    String path = '';
+    if (!kIsWeb) {
+      final dir = await getTemporaryDirectory();
+      path =
+          '${dir.path}/consultation_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    }
+    _audioPath = path;
+    _audioBytes = null;
 
     await _recorder.start(
       const RecordConfig(
@@ -63,7 +71,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         bitRate: 64000,
         sampleRate: 16000,
       ),
-      path: _audioPath!,
+      path: path,
     );
 
     _recordSeconds = 0;
@@ -79,19 +87,61 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   Future<void> _stopRecording() async {
     _timer?.cancel();
-    _audioPath = await _recorder.stop();
+    final result = await _recorder.stop();
     setState(() => _stage = _Stage.transcribing);
+
+    if (kIsWeb && result != null && result.isNotEmpty) {
+      // Web: result is a blob: URL — fetch bytes from it
+      try {
+        final response = await http.get(Uri.parse(result));
+        _audioBytes = response.bodyBytes;
+        _audioPath = null;
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'Failed to process audio: $e';
+          _stage = _Stage.idle;
+        });
+        return;
+      }
+    } else {
+      _audioPath = result;
+      _audioBytes = null;
+    }
+
     await _transcribeAudio();
   }
 
   // ── Whisper transcription ─────────────────────────────────────────────────
 
   Future<void> _transcribeAudio() async {
-    if (_audioPath == null) return;
+    Uint8List? bytes;
+
+    if (kIsWeb) {
+      bytes = _audioBytes;
+    } else if (_audioPath != null && _audioPath!.isNotEmpty) {
+      try {
+        bytes = await File(_audioPath!).readAsBytes();
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'Could not read audio: $e';
+          _stage = _Stage.idle;
+        });
+        return;
+      }
+    }
+
+    if (bytes == null || bytes.isEmpty) {
+      setState(() {
+        _errorMessage = 'No audio recorded.';
+        _stage = _Stage.idle;
+      });
+      return;
+    }
+
     try {
       final langCode = Get.find<SettingsController>().resolvedLanguageCode;
-      final transcript = await AiService.transcribeAudio(_audioPath!,
-          languageCode: langCode);
+      final transcript =
+          await AiService.transcribeAudio(bytes, languageCode: langCode);
       _transcriptController.text = transcript;
       setState(() => _stage = _Stage.transcribed);
     } catch (e) {
@@ -100,9 +150,13 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         _stage = _Stage.idle;
       });
     } finally {
-      try {
-        File(_audioPath!).deleteSync();
-      } catch (_) {}
+      // Clean up temp file on mobile
+      if (!kIsWeb && _audioPath != null && _audioPath!.isNotEmpty) {
+        try {
+          File(_audioPath!).deleteSync();
+        } catch (_) {}
+      }
+      _audioBytes = null;
     }
   }
 

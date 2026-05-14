@@ -44,10 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-<<<<<<< HEAD
 # API keys — never commit
-lib/secrets.dart
-=======
-# Local environment variables — never commit real keys
 .env
->>>>>>> 6708ae220cfda616a367da4476c8ff8bd982b365
+lib/secrets.dart
