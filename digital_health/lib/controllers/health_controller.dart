@@ -30,6 +30,10 @@ class HealthController extends GetxController {
   Patient? get effectivePatient => currentViewedPatient.value ?? patient.value;
   bool get isViewingOther => currentViewedPatient.value != null;
 
+  // The Firestore UID to use for all patient-scoped data queries.
+  // Falls back to the logged-in user's own UID when no family member is selected.
+  String? get activeUid => currentViewedPatient.value?.id ?? _auth.currentUser?.uid;
+
   // ── Visit preparations ───────────────────────────────────────────────────────
 
   RxList<Map<String, dynamic>> visitPreps = <Map<String, dynamic>>[].obs;
@@ -110,18 +114,22 @@ class HealthController extends GetxController {
   }
 
   Future<void> fetchConsultations() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
       final snapshot = await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('consultations')
           .orderBy('timestamp', descending: true)
           .get();
       consultations.value = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error fetching consultations: $e');
+      if (isViewingOther) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.access_denied'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 
@@ -317,10 +325,20 @@ class HealthController extends GetxController {
 
   void switchToPatient(Patient p) {
     currentViewedPatient.value = p;
+    consultations.clear();
+    visitPreps.clear();
+    visitPrepSummary.value = '';
+    fetchConsultations();
+    fetchVisitPreps();
   }
 
   void returnToMyProfile() {
     currentViewedPatient.value = null;
+    consultations.clear();
+    visitPreps.clear();
+    visitPrepSummary.value = '';
+    fetchConsultations();
+    fetchVisitPreps();
   }
 
   // ── Caregiver management ─────────────────────────────────────────────────────
@@ -435,19 +453,25 @@ class HealthController extends GetxController {
   // ── Visit prep – load / save ──────────────────────────────────────────────────
 
   Future<void> fetchVisitPreps() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get();
       final raw = doc.data()?['visitPreps'];
       if (raw != null) {
         visitPreps.value = List<Map<String, dynamic>>.from(raw);
-        if (visitPreps.isNotEmpty) {
-          visitPrepSummary.value = visitPreps.first['summary'] ?? '';
-        }
+        visitPrepSummary.value =
+            visitPreps.isNotEmpty ? (visitPreps.first['summary'] ?? '') : '';
+      } else {
+        visitPreps.clear();
+        visitPrepSummary.value = '';
       }
     } catch (e) {
       print('fetchVisitPreps error: $e');
+      if (isViewingOther) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.access_denied'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 

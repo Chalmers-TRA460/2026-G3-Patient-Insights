@@ -16,7 +16,8 @@
       "Bash(git pull *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "Bash(Get-ChildItem *)"
     ]
   }
 }

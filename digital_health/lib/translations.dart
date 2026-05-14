@@ -84,6 +84,7 @@ class AppTranslations extends Translations {
       'caregiver.not_found': 'Account not found. They must create an app account first.',
       'caregiver.success_title': 'Caregiver added',
       'caregiver.success_body': '@email can now view your health information.',
+      'caregiver.access_denied': 'Could not load data — the app may lack permission to read this profile. Check Firestore security rules.',
 
       // ── Bottom navigation ────────────────────────────────────────────────
       'nav.home': 'Home',
@@ -424,6 +425,7 @@ class AppTranslations extends Translations {
       'caregiver.not_found': 'Kontot hittades inte. De måste skapa ett appkonto först.',
       'caregiver.success_title': 'Vårdgivare tillagd',
       'caregiver.success_body': '@email kan nu se din hälsoinformation.',
+      'caregiver.access_denied': 'Kunde inte läsa data — appen saknar kanske behörighet. Kontrollera Firestore-säkerhetsreglerna.',
 
       // ── Bottom navigation ────────────────────────────────────────────────
       'nav.home': 'Hem',
