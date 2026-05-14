@@ -252,6 +252,23 @@ class AppTranslations extends Translations {
       'detail.show_less': 'Show less',
       'detail.test_knowledge': 'Test My Knowledge',
 
+      // ── Edit consultation ────────────────────────────────────────────────
+      'edit_consult.title': 'Edit Visit',
+      'edit_consult.save': 'Save Changes',
+      'edit_consult.doctor': 'Doctor Name',
+      'edit_consult.doctor_hint': 'e.g. Dr. Smith',
+      'edit_consult.transcript': 'Transcript',
+      'edit_consult.transcript_hint': 'Enter the full consultation transcript…',
+      'edit_consult.brief_hint': 'Key takeaways, medication changes, next steps…',
+      'edit_consult.detail_hint': 'Full personalized summary…',
+
+      // ── Delete visit ─────────────────────────────────────────────────────
+      'delete_visit.btn': 'Delete This Visit Record',
+      'delete_visit.title': 'Delete this record?',
+      'delete_visit.body': 'This will permanently remove this visit record and its summary. This cannot be undone.',
+      'delete_visit.cancel': 'Cancel',
+      'delete_visit.confirm': 'Delete',
+
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'My Health Profile',
       'profile.edit': 'Edit',
@@ -554,6 +571,23 @@ class AppTranslations extends Translations {
       'detail.read_more': 'Läs hela sammanfattningen',
       'detail.show_less': 'Visa mindre',
       'detail.test_knowledge': 'Testa min kunskap',
+
+      // ── Edit consultation ────────────────────────────────────────────────
+      'edit_consult.title': 'Redigera besök',
+      'edit_consult.save': 'Spara ändringar',
+      'edit_consult.doctor': 'Läkarnamn',
+      'edit_consult.doctor_hint': 't.ex. Dr. Svensson',
+      'edit_consult.transcript': 'Transkript',
+      'edit_consult.transcript_hint': 'Ange hela konsultationstranskriptet…',
+      'edit_consult.brief_hint': 'Viktiga punkter, medicineringsändringar, nästa steg…',
+      'edit_consult.detail_hint': 'Fullständig personaliserad sammanfattning…',
+
+      // ── Delete visit ─────────────────────────────────────────────────────
+      'delete_visit.btn': 'Ta bort detta besöksprotokoll',
+      'delete_visit.title': 'Ta bort det här protokollet?',
+      'delete_visit.body': 'Detta tar permanent bort besöksprotokollet och dess sammanfattning. Det går inte att ångra.',
+      'delete_visit.cancel': 'Avbryt',
+      'delete_visit.confirm': 'Ta bort',
 
       // ── Health profile ───────────────────────────────────────────────────
       'profile.title': 'Min hälsoprofil',

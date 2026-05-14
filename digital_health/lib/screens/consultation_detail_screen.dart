@@ -4,6 +4,7 @@ import '../controllers/health_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../models/quiz_question_model.dart';
 import '../services/ai_service.dart';
+import 'edit_consultation_screen.dart';
 import 'quiz_screen.dart';
 
 class ConsultationDetailScreen extends StatefulWidget {
@@ -31,7 +32,26 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
     final HealthController c = Get.find<HealthController>();
 
     return Scaffold(
-      appBar: AppBar(title: Text('detail.title'.tr)),
+      appBar: AppBar(
+        title: Text('detail.title'.tr),
+        actions: [
+          Obx(() {
+            if (c.isViewingOther) return const SizedBox.shrink();
+            final visit = widget.index < c.consultations.length
+                ? c.consultations[widget.index]
+                : widget.consultation;
+            return IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              tooltip: 'edit_consult.title'.tr,
+              onPressed: () => Get.to(
+                () => EditConsultationScreen(
+                    visit: visit, index: widget.index),
+                fullscreenDialog: true,
+              ),
+            );
+          }),
+        ],
+      ),
       body: Obx(() {
         final visit = widget.index < c.consultations.length
             ? c.consultations[widget.index]
@@ -498,11 +518,53 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                 );
               }),
 
+              const SizedBox(height: 32),
+
+              // ── Delete visit ──
+              if (!c.isViewingOther) ...[
+                const Divider(),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.red),
+                    label: Text('delete_visit.btn'.tr,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600)),
+                    onPressed: () => _confirmDelete(c),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 40),
             ],
           ),
         );
       }),
+    );
+  }
+
+  void _confirmDelete(HealthController c) {
+    Get.defaultDialog(
+      title: 'delete_visit.title'.tr,
+      middleText: 'delete_visit.body'.tr,
+      textCancel: 'delete_visit.cancel'.tr,
+      textConfirm: 'delete_visit.confirm'.tr,
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red,
+      onConfirm: () {
+        Get.back();
+        c.deleteConsultation(widget.index);
+      },
     );
   }
 

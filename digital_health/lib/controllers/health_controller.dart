@@ -184,6 +184,27 @@ class HealthController extends GetxController {
     }
   }
 
+  Future<void> deleteConsultation(int index) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final docId = consultations[index]['id'] as String?;
+    if (docId == null) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('consultations')
+          .doc(docId)
+          .delete();
+      final updated = List<Map<String, dynamic>>.from(consultations);
+      updated.removeAt(index);
+      consultations.value = updated;
+      Get.back();
+    } catch (e) {
+      Get.snackbar('snackbar.error'.tr, 'Failed to delete visit.');
+    }
+  }
+
   Future<void> updatePatientData(Map<String, dynamic> data) async {
     final user = _auth.currentUser;
     if (user == null) return;
