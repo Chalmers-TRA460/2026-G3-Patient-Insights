@@ -7,13 +7,12 @@ class PrivacySecurityScreen extends StatelessWidget {
 
   void _confirmDeleteAccount(BuildContext context) {
     Get.defaultDialog(
-      title: 'Delete All Data',
+      title: 'privacy.delete_all_title'.tr,
       titleStyle:
           const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-      middleText:
-          'This will permanently delete your account and all health data stored on our servers. This action cannot be undone.',
-      textConfirm: 'Delete Everything',
-      textCancel: 'Cancel',
+      middleText: 'privacy.delete_all_body'.tr,
+      textConfirm: 'privacy.delete_all_confirm'.tr,
+      textCancel: 'privacy.delete_all_cancel'.tr,
       confirmTextColor: Colors.white,
       buttonColor: Colors.red,
       onConfirm: () async {
@@ -23,11 +22,12 @@ class PrivacySecurityScreen extends StatelessWidget {
           Get.offAllNamed('/login');
         } on FirebaseAuthException catch (e) {
           if (e.code == 'requires-recent-login') {
-            Get.snackbar('Re-login Required',
-                'Sign out and sign back in before deleting your account.',
+            Get.snackbar('privacy.delete_relogin_title'.tr,
+                'privacy.delete_relogin_body'.tr,
                 snackPosition: SnackPosition.BOTTOM);
           } else {
-            Get.snackbar('Error', e.message ?? 'Could not delete account.',
+            Get.snackbar('privacy.delete_error_title'.tr,
+                e.message ?? 'privacy.delete_error_body'.tr,
                 snackPosition: SnackPosition.BOTTOM);
           }
         }
@@ -39,7 +39,7 @@ class PrivacySecurityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Privacy & Security')),
+      appBar: AppBar(title: Text('privacy.title'.tr)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -54,21 +54,22 @@ class PrivacySecurityScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.shield_outlined, size: 36, color: Colors.green),
-                  SizedBox(width: 16),
+                children: [
+                  const Icon(Icons.shield_outlined,
+                      size: 36, color: Colors.green),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Your data is protected',
-                            style: TextStyle(
+                        Text('privacy.protected.title'.tr,
+                            style: const TextStyle(
                                 fontSize: 17, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'We follow GDPR and the Swedish Patient Data Act (PDL).',
-                          style:
-                              TextStyle(fontSize: 13, color: Colors.black54),
+                          'privacy.protected.body'.tr,
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.black54),
                         ),
                       ],
                     ),
@@ -79,54 +80,55 @@ class PrivacySecurityScreen extends StatelessWidget {
             const SizedBox(height: 28),
 
             // What we collect
-            _SectionTitle('What Data We Collect'),
+            _SectionTitle('privacy.section.collect'.tr),
             _BulletItem(Icons.person_outline_rounded, Colors.blue,
-                'Account information',
-                'Name, email address, and sign-in provider (used to identify your account).'),
+                'privacy.collect.account'.tr,
+                'privacy.collect.account.body'.tr),
             _BulletItem(Icons.favorite_outline_rounded, Colors.red,
-                'Health profile data',
-                'Height, weight, blood type, medical conditions, medications, and vitals that you enter manually.'),
+                'privacy.collect.health'.tr,
+                'privacy.collect.health.body'.tr),
             _BulletItem(Icons.mic_none_rounded, Colors.purple,
-                'Consultation transcripts',
-                'Voice recordings are transcribed locally on your device. Only the text transcript and AI summary are stored.'),
+                'privacy.collect.transcripts'.tr,
+                'privacy.collect.transcripts.body'.tr),
             _BulletItem(Icons.chat_bubble_outline_rounded, Colors.orange,
-                'AI chat messages',
-                'Questions you ask the AI assistant, used only to generate a response. Conversations are not stored.'),
+                'privacy.collect.chat'.tr,
+                'privacy.collect.chat.body'.tr),
 
             const SizedBox(height: 24),
 
             // How it's stored
-            _SectionTitle('How It Is Stored'),
+            _SectionTitle('privacy.section.stored'.tr),
             _InfoCard(
               icon: Icons.storage_rounded,
               color: Colors.teal,
-              title: 'Firebase Firestore (Google Cloud)',
-              body:
-                  'Your health profile and consultation summaries are stored in Firebase Firestore, a secure cloud database. Data is encrypted at rest and in transit. Firebase is GDPR-compliant and its servers are located in the EU.',
+              title: 'privacy.stored.firebase.title'.tr,
+              body: 'privacy.stored.firebase.body'.tr,
             ),
             const SizedBox(height: 12),
             _InfoCard(
               icon: Icons.lock_outline_rounded,
               color: Colors.indigo,
-              title: 'Access Control',
-              body:
-                  'Your data is protected by Firebase Security Rules — only your authenticated account can read or write your documents. No one else, including the development team, has routine access to your personal health data.',
+              title: 'privacy.stored.access.title'.tr,
+              body: 'privacy.stored.access.body'.tr,
             ),
 
             const SizedBox(height: 24),
 
             // Third-party services
-            _SectionTitle('Third-Party Services'),
-            _ThirdPartyRow('Firebase (Google)', 'Authentication & database storage',
-                'GDPR-compliant, EU servers'),
-            _ThirdPartyRow('OpenRouter / Nvidia Nemotron',
-                'AI-powered Q&A and consultation summarisation',
-                'Queries contain health context — see OpenRouter\'s privacy policy.'),
+            _SectionTitle('privacy.section.third_party'.tr),
+            _ThirdPartyRow(
+                'privacy.tp.firebase.name'.tr,
+                'privacy.tp.firebase.purpose'.tr,
+                'privacy.tp.firebase.note'.tr),
+            _ThirdPartyRow(
+                'privacy.tp.openrouter.name'.tr,
+                'privacy.tp.openrouter.purpose'.tr,
+                'privacy.tp.openrouter.note'.tr),
 
             const SizedBox(height: 24),
 
             // Legal basis
-            _SectionTitle('Legal Basis (GDPR / PDL)'),
+            _SectionTitle('privacy.section.legal'.tr),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -137,18 +139,16 @@ class PrivacySecurityScreen extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'This is a university research project (TRA460, Chalmers University of Technology). '
-                    'Data is processed on the basis of your explicit consent when you create an account. '
-                    'Under GDPR (Art. 17) and the Swedish Patient Data Act, you have the right to:',
-                    style: TextStyle(fontSize: 14, height: 1.5),
+                    'privacy.legal.body'.tr,
+                    style: const TextStyle(fontSize: 14, height: 1.5),
                   ),
-                  SizedBox(height: 10),
-                  _LegalRight('Access a copy of your data'),
-                  _LegalRight('Correct inaccurate data'),
-                  _LegalRight('Request erasure ("right to be forgotten")'),
-                  _LegalRight('Withdraw consent at any time'),
+                  const SizedBox(height: 10),
+                  _LegalRight('privacy.legal.right1'.tr),
+                  _LegalRight('privacy.legal.right2'.tr),
+                  _LegalRight('privacy.legal.right3'.tr),
+                  _LegalRight('privacy.legal.right4'.tr),
                 ],
               ),
             ),
@@ -158,7 +158,7 @@ class PrivacySecurityScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Your controls
-            _SectionTitle('Your Controls'),
+            _SectionTitle('privacy.section.controls'.tr),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Container(
@@ -170,11 +170,11 @@ class PrivacySecurityScreen extends StatelessWidget {
                 child: const Icon(Icons.edit_outlined,
                     color: Colors.blue, size: 22),
               ),
-              title: const Text('Edit your health data',
-                  style: TextStyle(
+              title: Text('privacy.controls.edit'.tr,
+                  style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w600)),
-              subtitle: const Text('Go to Health Profile → Edit',
-                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+              subtitle: Text('privacy.controls.edit.sub'.tr,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey)),
               onTap: () => Get.toNamed('/edit-profile'),
             ),
             const SizedBox(height: 8),
@@ -189,22 +189,20 @@ class PrivacySecurityScreen extends StatelessWidget {
                 child: const Icon(Icons.delete_forever_rounded,
                     color: Colors.red, size: 22),
               ),
-              title: const Text('Delete all my data',
-                  style: TextStyle(
+              title: Text('privacy.controls.delete'.tr,
+                  style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.red)),
-              subtitle: const Text(
-                  'Permanently removes your account and all stored health information.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+              subtitle: Text('privacy.controls.delete.sub'.tr,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey)),
               onTap: () => _confirmDeleteAccount(context),
             ),
 
             const SizedBox(height: 32),
             Center(
               child: Text(
-                'For privacy enquiries: tra460.group3@chalmers.se\n'
-                'Supervisory authority: IMY (Integritetsskyddsmyndigheten)',
+                'privacy.contact'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),

@@ -20,54 +20,51 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text('notif.title'.tr)),
       body: Obx(() => ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              _SectionHeader('Visit & Consultation'),
+              _SectionHeader('notif.section.visit'.tr),
               _ToggleTile(
                 icon: Icons.event_note_rounded,
                 iconColor: Colors.blue,
-                title: 'Visit Reminders',
-                subtitle: 'Reminders before upcoming appointments',
+                title: 'notif.visit_reminders'.tr,
+                subtitle: 'notif.visit_reminders.sub'.tr,
                 value: _prefs.visitReminders.value,
                 onChanged: (v) => _prefs.visitReminders.value = v,
               ),
               _ToggleTile(
                 icon: Icons.mic_rounded,
                 iconColor: Colors.indigo,
-                title: 'Consultation Alerts',
-                subtitle:
-                    'Notify when a recorded consultation summary is ready',
+                title: 'notif.consult_alerts'.tr,
+                subtitle: 'notif.consult_alerts.sub'.tr,
                 value: _prefs.consultationAlerts.value,
                 onChanged: (v) => _prefs.consultationAlerts.value = v,
               ),
 
               const SizedBox(height: 24),
-              _SectionHeader('Profile & Health'),
+              _SectionHeader('notif.section.health'.tr),
               _ToggleTile(
                 icon: Icons.analytics_rounded,
                 iconColor: Colors.green,
-                title: 'Profile Completion Reminders',
-                subtitle:
-                    'Nudges to fill in missing health profile fields',
+                title: 'notif.profile_reminders'.tr,
+                subtitle: 'notif.profile_reminders.sub'.tr,
                 value: _prefs.profileReminders.value,
                 onChanged: (v) => _prefs.profileReminders.value = v,
               ),
               _ToggleTile(
                 icon: Icons.tips_and_updates_rounded,
                 iconColor: Colors.orange,
-                title: 'Health Tips',
-                subtitle:
-                    'Occasional tips based on your health conditions',
+                title: 'notif.health_tips'.tr,
+                subtitle: 'notif.health_tips.sub'.tr,
                 value: _prefs.healthTips.value,
                 onChanged: (v) => _prefs.healthTips.value = v,
               ),
               _ToggleTile(
                 icon: Icons.summarize_rounded,
                 iconColor: Colors.teal,
-                title: 'Weekly Health Digest',
-                subtitle: 'A brief weekly summary of your health activity',
+                title: 'notif.weekly_digest'.tr,
+                subtitle: 'notif.weekly_digest.sub'.tr,
                 value: _prefs.weeklyDigest.value,
                 onChanged: (v) => _prefs.weeklyDigest.value = v,
               ),
@@ -83,16 +80,15 @@ class NotificationsScreen extends StatelessWidget {
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Icon(Icons.info_outline_rounded,
+                  children: [
+                    const Icon(Icons.info_outline_rounded,
                         color: Colors.blue, size: 20),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'These are in-app preferences. To manage system-level '
-                        'push notifications, go to your phone\'s Settings → '
-                        'Patient Insights.',
-                        style: TextStyle(fontSize: 14, color: Colors.blueGrey),
+                        'notif.system_info'.tr,
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.blueGrey),
                       ),
                     ),
                   ],

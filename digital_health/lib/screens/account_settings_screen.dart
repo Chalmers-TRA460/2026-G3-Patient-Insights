@@ -32,9 +32,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
   String get _provider {
     final providers = _user?.providerData.map((p) => p.providerId).toList() ?? [];
-    if (providers.contains('google.com')) return 'Google';
-    if (providers.contains('password')) return 'Email & Password';
-    return 'Unknown';
+    if (providers.contains('google.com')) return 'account.provider.google'.tr;
+    if (providers.contains('password')) return 'account.provider.email'.tr;
+    return 'account.provider.unknown'.tr;
+  }
+
+  bool get _isGoogleProvider {
+    final providers = _user?.providerData.map((p) => p.providerId).toList() ?? [];
+    return providers.contains('google.com');
   }
 
   Future<void> _saveName() async {
@@ -45,10 +50,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       await _user?.updateDisplayName(name);
       await _user?.reload();
       await Get.find<HealthController>().updatePatientData({'name': name});
-      Get.snackbar('Updated', 'Display name saved.',
+      Get.snackbar('account.name_updated_title'.tr, 'account.name_updated_body'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Could not update name.',
+      Get.snackbar('account.name_error_title'.tr, 'account.name_error_body'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       setState(() => _savingName = false);
@@ -68,12 +73,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
   void _confirmDeleteAccount() {
     Get.defaultDialog(
-      title: 'Delete Account',
+      title: 'account.delete'.tr,
       titleStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-      middleText:
-          'This will permanently delete your account and all health data. This cannot be undone.',
-      textConfirm: 'Delete',
-      textCancel: 'Cancel',
+      middleText: 'account.delete.confirm_body'.tr,
+      textConfirm: 'account.delete.confirm_btn'.tr,
+      textCancel: 'account.delete.cancel_btn'.tr,
       confirmTextColor: Colors.white,
       buttonColor: Colors.red,
       onConfirm: () async {
@@ -83,11 +87,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           Get.offAllNamed('/login');
         } on FirebaseAuthException catch (e) {
           if (e.code == 'requires-recent-login') {
-            Get.snackbar('Re-login Required',
-                'Please sign out and sign in again before deleting your account.',
+            Get.snackbar('account.delete.relogin_title'.tr,
+                'account.delete.relogin_body'.tr,
                 snackPosition: SnackPosition.BOTTOM);
           } else {
-            Get.snackbar('Error', e.message ?? 'Could not delete account.',
+            Get.snackbar('account.name_error_title'.tr,
+                e.message ?? 'account.delete.error'.tr,
                 snackPosition: SnackPosition.BOTTOM);
           }
         }
@@ -98,14 +103,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final email = _user?.email ?? 'Unknown';
+    final email = _user?.email ?? 'account.email_unknown'.tr;
     final initial = (_user?.displayName?.isNotEmpty == true)
         ? _user!.displayName![0].toUpperCase()
         : (email.isNotEmpty ? email[0].toUpperCase() : '?');
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Account Settings')),
+      appBar: AppBar(title: Text('account.title'.tr)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -135,7 +140,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       color: theme.primaryColor.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('Signed in with $_provider',
+                    child: Text(
+                        'account.signed_in_with'.trParams({'provider': _provider}),
                         style: TextStyle(
                             fontSize: 13, color: theme.primaryColor)),
                   ),
@@ -145,15 +151,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             const SizedBox(height: 36),
 
             // Update display name
-            const Text('Display Name',
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('account.display_name'.tr,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             TextField(
               controller: _nameController,
               style: const TextStyle(fontSize: 18),
               decoration: InputDecoration(
-                hintText: 'Your name',
+                hintText: 'account.name_hint'.tr,
                 hintStyle:
                     const TextStyle(fontSize: 18, color: Colors.grey),
                 border: OutlineInputBorder(
@@ -171,7 +177,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Save Name'),
+                    : Text('account.save_name'.tr),
               ),
             ),
 
@@ -180,25 +186,25 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             const SizedBox(height: 24),
 
             // Password reset
-            const Text('Password',
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('account.password'.tr,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
-              _provider == 'Google'
-                  ? 'Your account uses Google Sign-In. Password changes are managed through your Google account.'
-                  : 'A reset link will be sent to $email.',
+              _isGoogleProvider
+                  ? 'account.password.google'.tr
+                  : 'account.password.reset_info'.trParams({'email': email}),
               style: const TextStyle(fontSize: 15, color: Colors.grey),
             ),
             const SizedBox(height: 12),
-            if (_provider != 'Google')
+            if (!_isGoogleProvider)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.lock_reset_rounded),
                   label: _sendingReset
-                      ? const Text('Sending…')
-                      : const Text('Send Password Reset Email'),
+                      ? Text('account.password.sending'.tr)
+                      : Text('account.password.send_reset'.tr),
                   onPressed: _sendingReset ? null : _sendPasswordReset,
                 ),
               ),
@@ -208,8 +214,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             const SizedBox(height: 24),
 
             // Danger zone
-            const Text('Danger Zone',
-                style: TextStyle(
+            Text('account.danger_zone'.tr,
+                style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.red)),
@@ -219,8 +225,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.delete_forever_rounded,
                     color: Colors.red),
-                label: const Text('Delete Account',
-                    style: TextStyle(color: Colors.red)),
+                label: Text('account.delete'.tr,
+                    style: const TextStyle(color: Colors.red)),
                 style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.red)),
                 onPressed: _confirmDeleteAccount,

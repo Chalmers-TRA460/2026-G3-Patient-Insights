@@ -61,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name.isNotEmpty ? name : 'My Account',
+                        Text(name.isNotEmpty ? name : 'settings.my_account'.tr,
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
                         Text(email,
@@ -79,11 +79,12 @@ class SettingsScreen extends StatelessWidget {
                   context,
                   icon: Icons.analytics_rounded,
                   iconColor: Colors.teal,
-                  title:
-                      'Profile Completion — ${healthController.completionPercentage.toInt()}%',
+                  title: 'settings.profile_completion'.trParams({
+                    'pct': healthController.completionPercentage.toInt().toString(),
+                  }),
                   subtitle: healthController.completionPercentage < 100
-                      ? 'Tap to complete your health profile'
-                      : 'Your profile is complete',
+                      ? 'settings.profile_completion.tap'.tr
+                      : 'settings.profile_completion.done'.tr,
                   onTap: () => Get.toNamed('/edit-profile'),
                 )),
 
@@ -96,24 +97,24 @@ class SettingsScreen extends StatelessWidget {
               context,
               icon: Icons.person_outline_rounded,
               iconColor: Colors.blue,
-              title: 'Account Settings',
-              subtitle: 'Name, password, delete account',
+              title: 'settings.account'.tr,
+              subtitle: 'settings.account.sub'.tr,
               onTap: () => Get.to(() => const AccountSettingsScreen()),
             ),
             _buildTile(
               context,
               icon: Icons.notifications_none_rounded,
               iconColor: Colors.orange,
-              title: 'Notifications',
-              subtitle: 'Visit reminders and health alerts',
+              title: 'settings.notifications'.tr,
+              subtitle: 'settings.notifications.sub'.tr,
               onTap: () => Get.to(() => const NotificationsScreen()),
             ),
             _buildTile(
               context,
               icon: Icons.security_rounded,
               iconColor: Colors.green,
-              title: 'Privacy & Security',
-              subtitle: 'Data usage, GDPR, delete data',
+              title: 'settings.privacy'.tr,
+              subtitle: 'settings.privacy.sub'.tr,
               onTap: () => Get.to(() => const PrivacySecurityScreen()),
             ),
             _buildTile(
@@ -136,8 +137,8 @@ class SettingsScreen extends StatelessWidget {
               context,
               icon: Icons.help_outline_rounded,
               iconColor: Colors.indigo,
-              title: 'Help & Support',
-              subtitle: 'FAQs and contact information',
+              title: 'settings.help'.tr,
+              subtitle: 'settings.help.sub'.tr,
               onTap: () => Get.to(() => const HelpSupportScreen()),
             ),
 
