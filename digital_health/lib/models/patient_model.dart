@@ -1,3 +1,5 @@
+import 'medical_entry_model.dart';
+
 class Patient {
   final String id;
   final String name;
@@ -13,6 +15,14 @@ class Patient {
   final Map<String, String>? emergencyContact;
   final List<String> authorizedCaregivers;
 
+  // EHDS / FHIR-aligned standardized lists.
+  final List<MedicalEntry> allergies;
+  final List<MedicalEntry> currentMedications;
+  final List<MedicalEntry> currentDiagnoses;
+  final List<MedicalEntry> pastIllnesses;
+  final List<MedicalEntry> implants;
+  final List<MedicalEntry> vaccinations;
+
   Patient({
     required this.id,
     required this.name,
@@ -27,6 +37,12 @@ class Patient {
     this.vitals = const {},
     this.emergencyContact,
     this.authorizedCaregivers = const [],
+    this.allergies = const [],
+    this.currentMedications = const [],
+    this.currentDiagnoses = const [],
+    this.pastIllnesses = const [],
+    this.implants = const [],
+    this.vaccinations = const [],
   });
 
   double get bmi {
@@ -42,6 +58,49 @@ class Patient {
     if (val < 25) return 'Normal';
     if (val < 30) return 'Overweight';
     return 'Obese';
+  }
+
+  Patient copyWith({
+    String? name,
+    String? email,
+    String? profileImage,
+    DateTime? dob,
+    String? bloodType,
+    double? height,
+    double? weight,
+    List<String>? conditions,
+    List<Map<String, String>>? medications,
+    Map<String, dynamic>? vitals,
+    Map<String, String>? emergencyContact,
+    List<String>? authorizedCaregivers,
+    List<MedicalEntry>? allergies,
+    List<MedicalEntry>? currentMedications,
+    List<MedicalEntry>? currentDiagnoses,
+    List<MedicalEntry>? pastIllnesses,
+    List<MedicalEntry>? implants,
+    List<MedicalEntry>? vaccinations,
+  }) {
+    return Patient(
+      id: id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      profileImage: profileImage ?? this.profileImage,
+      dob: dob ?? this.dob,
+      bloodType: bloodType ?? this.bloodType,
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      conditions: conditions ?? this.conditions,
+      medications: medications ?? this.medications,
+      vitals: vitals ?? this.vitals,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      authorizedCaregivers: authorizedCaregivers ?? this.authorizedCaregivers,
+      allergies: allergies ?? this.allergies,
+      currentMedications: currentMedications ?? this.currentMedications,
+      currentDiagnoses: currentDiagnoses ?? this.currentDiagnoses,
+      pastIllnesses: pastIllnesses ?? this.pastIllnesses,
+      implants: implants ?? this.implants,
+      vaccinations: vaccinations ?? this.vaccinations,
+    );
   }
 
   int get age {
@@ -76,6 +135,12 @@ class Patient {
           : null,
       authorizedCaregivers:
           List<String>.from(data['authorizedCaregivers'] ?? []),
+      allergies: _entriesFromJson(data['allergies']),
+      currentMedications: _entriesFromJson(data['currentMedications']),
+      currentDiagnoses: _entriesFromJson(data['currentDiagnoses']),
+      pastIllnesses: _entriesFromJson(data['pastIllnesses']),
+      implants: _entriesFromJson(data['implants']),
+      vaccinations: _entriesFromJson(data['vaccinations']),
     );
   }
 
@@ -93,6 +158,24 @@ class Patient {
       'vitals': vitals,
       'emergencyContact': emergencyContact,
       'authorizedCaregivers': authorizedCaregivers,
+      'allergies': _entriesToJson(allergies),
+      'currentMedications': _entriesToJson(currentMedications),
+      'currentDiagnoses': _entriesToJson(currentDiagnoses),
+      'pastIllnesses': _entriesToJson(pastIllnesses),
+      'implants': _entriesToJson(implants),
+      'vaccinations': _entriesToJson(vaccinations),
     };
+  }
+
+  static List<MedicalEntry> _entriesFromJson(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => MedicalEntry.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static List<Map<String, dynamic>> _entriesToJson(List<MedicalEntry> entries) {
+    return entries.map((e) => e.toJson()).toList();
   }
 }

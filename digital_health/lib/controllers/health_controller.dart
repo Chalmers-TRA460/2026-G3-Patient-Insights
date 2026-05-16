@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
+import '../models/medical_entry_model.dart';
 import '../services/ai_service.dart';
 import 'settings_controller.dart';
 
@@ -29,6 +30,10 @@ class HealthController extends GetxController {
   // Returns the family member being viewed, or the primary user's own record.
   Patient? get effectivePatient => currentViewedPatient.value ?? patient.value;
   bool get isViewingOther => currentViewedPatient.value != null;
+
+  // The Firestore UID to use for all patient-scoped data queries.
+  // Falls back to the logged-in user's own UID when no family member is selected.
+  String? get activeUid => currentViewedPatient.value?.id ?? _auth.currentUser?.uid;
 
   // ── Visit preparations ───────────────────────────────────────────────────────
 
@@ -110,18 +115,22 @@ class HealthController extends GetxController {
   }
 
   Future<void> fetchConsultations() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
       final snapshot = await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('consultations')
           .orderBy('timestamp', descending: true)
           .get();
       consultations.value = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error fetching consultations: $e');
+      if (isViewingOther) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.access_denied'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 
@@ -292,6 +301,146 @@ class HealthController extends GetxController {
     }
   }
 
+  // ── Standardized medical entries (allergies, meds, diagnoses, …) ─────────
+
+  // The six EHDS / FHIR-aligned categories editable on the profile screen.
+  // Mapped to the matching field names on Patient + Firestore documents.
+  static const Set<String> medicalEntryCategories = {
+    'allergies',
+    'currentMedications',
+    'currentDiagnoses',
+    'pastIllnesses',
+    'implants',
+    'vaccinations',
+  };
+
+  List<MedicalEntry> medicalEntriesFor(String category) {
+    final p = patient.value;
+    if (p == null) return const [];
+    switch (category) {
+      case 'allergies':
+        return p.allergies;
+      case 'currentMedications':
+        return p.currentMedications;
+      case 'currentDiagnoses':
+        return p.currentDiagnoses;
+      case 'pastIllnesses':
+        return p.pastIllnesses;
+      case 'implants':
+        return p.implants;
+      case 'vaccinations':
+        return p.vaccinations;
+      default:
+        return const [];
+    }
+  }
+
+  // Apply a category list to patient.value without a network round-trip.
+  // The reactive Rxn fires its listeners as soon as the new Patient is set,
+  // so any Obx watching the patient rebuilds immediately.
+  void _applyCategoryLocally(String category, List<MedicalEntry> list) {
+    final p = patient.value;
+    if (p == null) return;
+    switch (category) {
+      case 'allergies':
+        patient.value = p.copyWith(allergies: list);
+        break;
+      case 'currentMedications':
+        patient.value = p.copyWith(currentMedications: list);
+        break;
+      case 'currentDiagnoses':
+        patient.value = p.copyWith(currentDiagnoses: list);
+        break;
+      case 'pastIllnesses':
+        patient.value = p.copyWith(pastIllnesses: list);
+        break;
+      case 'implants':
+        patient.value = p.copyWith(implants: list);
+        break;
+      case 'vaccinations':
+        patient.value = p.copyWith(vaccinations: list);
+        break;
+    }
+  }
+
+  // Single-write persist. Skips the full document re-fetch (and the extra
+  // email-refresh write) that updatePatientData triggers, so chip add/remove
+  // feels instant instead of waiting on three network round-trips.
+  Future<void> _persistCategory(
+      String category, List<MedicalEntry> list) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        category: list.map((e) => e.toJson()).toList(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('persist $category failed: $e');
+    }
+  }
+
+  Future<void> addMedicalEntry({
+    required String category,
+    required String displayText,
+    String? codedAnswer,
+    DateTime? occurredOn,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final trimmed = displayText.trim();
+    if (trimmed.isEmpty) return;
+
+    final now = DateTime.now();
+    final entry = MedicalEntry(
+      id: _firestore.collection('users').doc().id,
+      displayText: trimmed,
+      codedAnswer: codedAnswer,
+      dateAdded: now,
+      lastUpdated: now,
+      occurredOn: occurredOn,
+      // source defaults to 'patient_reported' — the only origin available
+      // from the patient-facing edit screen today.
+    );
+
+    final updated = [...medicalEntriesFor(category), entry];
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
+  }
+
+  Future<void> updateMedicalEntry({
+    required String category,
+    required String id,
+    required String displayText,
+    String? codedAnswer,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final trimmed = displayText.trim();
+    if (trimmed.isEmpty) return;
+
+    final now = DateTime.now();
+    final updated = medicalEntriesFor(category)
+        .map((e) => e.id == id
+            ? e.copyWith(
+                displayText: trimmed,
+                codedAnswer: codedAnswer ?? e.codedAnswer,
+                lastUpdated: now,
+              )
+            : e)
+        .toList();
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
+  }
+
+  Future<void> removeMedicalEntry({
+    required String category,
+    required String id,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final updated =
+        medicalEntriesFor(category).where((e) => e.id != id).toList();
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
+  }
+
   // ── Family access ────────────────────────────────────────────────────────────
 
   Future<void> fetchAccessiblePatients() async {
@@ -317,10 +466,20 @@ class HealthController extends GetxController {
 
   void switchToPatient(Patient p) {
     currentViewedPatient.value = p;
+    consultations.clear();
+    visitPreps.clear();
+    visitPrepSummary.value = '';
+    fetchConsultations();
+    fetchVisitPreps();
   }
 
   void returnToMyProfile() {
     currentViewedPatient.value = null;
+    consultations.clear();
+    visitPreps.clear();
+    visitPrepSummary.value = '';
+    fetchConsultations();
+    fetchVisitPreps();
   }
 
   // ── Caregiver management ─────────────────────────────────────────────────────
@@ -435,19 +594,25 @@ class HealthController extends GetxController {
   // ── Visit prep – load / save ──────────────────────────────────────────────────
 
   Future<void> fetchVisitPreps() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get();
       final raw = doc.data()?['visitPreps'];
       if (raw != null) {
         visitPreps.value = List<Map<String, dynamic>>.from(raw);
-        if (visitPreps.isNotEmpty) {
-          visitPrepSummary.value = visitPreps.first['summary'] ?? '';
-        }
+        visitPrepSummary.value =
+            visitPreps.isNotEmpty ? (visitPreps.first['summary'] ?? '') : '';
+      } else {
+        visitPreps.clear();
+        visitPrepSummary.value = '';
       }
     } catch (e) {
       print('fetchVisitPreps error: $e');
+      if (isViewingOther) {
+        Get.snackbar('snackbar.error'.tr, 'caregiver.access_denied'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 

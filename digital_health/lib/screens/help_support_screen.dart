@@ -1,49 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  static const _faqs = [
-    _Faq(
-      q: 'What does Patient Insights do?',
-      a: 'Patient Insights helps you understand your clinical records from 1177.se in plain, everyday language. You can record consultations, get AI-assisted explanations, and manage your health profile — all in one place.',
-    ),
-    _Faq(
-      q: 'How do I record a consultation?',
-      a: 'Tap the microphone icon on the home screen or go to the "Record Consultation" option. The app listens to your appointment in real time and generates a plain-language summary using AI once you stop recording.',
-    ),
-    _Faq(
-      q: 'How do I ask the AI a health question?',
-      a: 'Go to the AI Chat tab (the chat bubble icon in the bottom navigation). Type or speak your question — the AI uses your health profile to give you personalised answers.',
-    ),
-    _Faq(
-      q: 'How do I add a medical condition or medication?',
-      a: 'Go to Settings → Profile Completion, or open your Health Profile and tap "Edit". You can add conditions and medications from there.',
-    ),
-    _Faq(
-      q: 'Is my health data private?',
-      a: 'Yes. Your data is stored securely in Firebase Firestore and is only accessible to your account. We do not share your personal health information with third parties. See Privacy & Security for full details.',
-    ),
-    _Faq(
-      q: 'Can I delete my account and data?',
-      a: 'Yes. Go to Settings → Account Settings → Delete Account. This permanently removes your account and all associated health data.',
-    ),
-    _Faq(
-      q: 'The AI summary doesn\'t look right — what should I do?',
-      a: 'AI summaries are for informational purposes only and may not be fully accurate. Always verify health information with your doctor. You can re-record the consultation or contact support if you notice a systematic issue.',
-    ),
-    _Faq(
-      q: 'Which languages does the app support?',
-      a: 'The app interface is currently in English. The AI can understand and respond in both English and Swedish, making it suitable for patients who receive care in Sweden.',
-    ),
-  ];
+  static List<_Faq> get _faqs => [
+        _Faq(q: 'help.faq.q1'.tr, a: 'help.faq.a1'.tr),
+        _Faq(q: 'help.faq.q2'.tr, a: 'help.faq.a2'.tr),
+        _Faq(q: 'help.faq.q3'.tr, a: 'help.faq.a3'.tr),
+        _Faq(q: 'help.faq.q4'.tr, a: 'help.faq.a4'.tr),
+        _Faq(q: 'help.faq.q5'.tr, a: 'help.faq.a5'.tr),
+        _Faq(q: 'help.faq.q6'.tr, a: 'help.faq.a6'.tr),
+        _Faq(q: 'help.faq.q7'.tr, a: 'help.faq.a7'.tr),
+        _Faq(q: 'help.faq.q8'.tr, a: 'help.faq.a8'.tr),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Help & Support')),
+      appBar: AppBar(title: Text('help.title'.tr)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -62,14 +39,14 @@ class HelpSupportScreen extends StatelessWidget {
                   Icon(Icons.support_agent_rounded,
                       size: 48, color: theme.primaryColor),
                   const SizedBox(height: 12),
-                  const Text('How can we help?',
-                      style: TextStyle(
+                  Text('help.hero.title'.tr,
+                      style: const TextStyle(
                           fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Find answers below or reach out to us directly.',
+                  Text(
+                    'help.hero.sub'.tr,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: Colors.grey),
+                    style: const TextStyle(fontSize: 15, color: Colors.grey),
                   ),
                 ],
               ),
@@ -77,8 +54,8 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             // FAQ
-            const Text('Frequently Asked Questions',
-                style: TextStyle(
+            Text('help.faq.title'.tr,
+                style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ..._faqs.map((faq) => _FaqTile(faq: faq)),
@@ -88,30 +65,29 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Contact
-            const Text('Contact Us',
-                style: TextStyle(
+            Text('help.contact.title'.tr,
+                style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _ContactTile(
               icon: Icons.email_outlined,
               iconColor: Colors.blue,
-              title: 'Email Support',
-              subtitle: 'tra460.group3@chalmers.se',
+              title: 'help.contact.email'.tr,
+              subtitle: 'help.contact.email.value'.tr,
               onTap: () {/* mailto could be added here */},
             ),
             _ContactTile(
               icon: Icons.school_outlined,
               iconColor: Colors.indigo,
-              title: 'Course Project',
-              subtitle: 'TRA460 — Chalmers University of Technology',
+              title: 'help.contact.project'.tr,
+              subtitle: 'help.contact.project.value'.tr,
               onTap: null,
             ),
             _ContactTile(
               icon: Icons.local_hospital_outlined,
               iconColor: Colors.red,
-              title: 'Clinical Mentor',
-              subtitle:
-                  'Sara Hansson — Specialist in Anesthesia & Intensive Care\nSahlgrenska University Hospital',
+              title: 'help.contact.mentor'.tr,
+              subtitle: 'help.contact.mentor.value'.tr,
               onTap: null,
             ),
 
@@ -120,15 +96,14 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // About
-            const Text('About',
-                style: TextStyle(
+            Text('help.about.title'.tr,
+                style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _InfoRow('App name', 'Patient Insights'),
-            _InfoRow('Version', '1.0.0'),
-            _InfoRow('Group', 'TRA460 Group 3 — Chalmers University'),
-            _InfoRow('Members',
-                'Xiaoyu Chen · Xiyu Du · Nathalie Hogberg · Sugash Krishnamoorthy'),
+            _InfoRow('help.about.app'.tr, 'help.about.app.value'.tr),
+            _InfoRow('help.about.version'.tr, 'help.about.version.value'.tr),
+            _InfoRow('help.about.group'.tr, 'help.about.group.value'.tr),
+            _InfoRow('help.about.members'.tr, 'help.about.members.value'.tr),
             const SizedBox(height: 40),
           ],
         ),

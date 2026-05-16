@@ -63,6 +63,7 @@ class HomeScreen extends StatelessWidget {
                   Color fg, VoidCallback onTap) {
                 final label = translationKey.tr;
                 final inner = Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(24),
@@ -72,14 +73,19 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Icon(icon, size: iconSize, color: fg),
                       const SizedBox(height: 12),
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: labelSize,
-                            fontWeight: FontWeight.bold,
-                            color: fg.withOpacity(0.85),
-                            height: 1.3),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: labelSize,
+                                fontWeight: FontWeight.bold,
+                                color: fg.withOpacity(0.85),
+                                height: 1.3),
+                          ),
+                        ),
                       ),
                     ],
                   ),

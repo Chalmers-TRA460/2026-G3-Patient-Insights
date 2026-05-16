@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Returns true when the requesting user's email is listed in the patient's
+    // authorizedCaregivers array. Uses get() to read the parent user document
+    // so the check works for both direct reads and subcollection queries.
+    function isAuthorizedCaregiver(userId) {
+      let patientDoc = get(/databases/$(database)/documents/users/$(userId));
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email in patientDoc.data.get('authorizedCaregivers', []);
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      // Owners can read and write their own profile.
+      // Authorized caregivers can read (but not write) a patient's profile.
+      allow read:  if isOwner(userId) || isAuthorizedCaregiver(userId);
+      allow write: if isOwner(userId);
+
+      match /consultations/{consultId} {
+        // Same caregiver read access extends to the consultations subcollection.
+        allow read:  if isOwner(userId) || isAuthorizedCaregiver(userId);
+        allow write: if isOwner(userId);
+      }
+    }
+  }
+}

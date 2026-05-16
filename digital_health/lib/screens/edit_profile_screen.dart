@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../models/medical_entry_model.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,13 +20,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _heightCtrl;
   late TextEditingController _weightCtrl;
 
-  List<String> _conditions = [];
-  final TextEditingController _conditionCtrl = TextEditingController();
-
   final List<Map<String, TextEditingController>> _medCtrls = [];
 
-  late TextEditingController _emNameCtrl;
-  late TextEditingController _emPhoneCtrl;
+  // One input controller per standardized medical category.
+  final Map<String, TextEditingController> _medicalInputCtrls = {
+    for (final c in HealthController.medicalEntryCategories)
+      c: TextEditingController(),
+  };
+
+  // Categories where the entry has a clinically meaningful date the patient
+  // can provide (e.g. when the vaccine was given, when the illness occurred).
+  static const Set<String> _datedCategories = {
+    'pastIllnesses',
+    'implants',
+    'vaccinations',
+  };
+
+  // Holds the currently-selected `occurredOn` date for the input row of each
+  // dated category. Reset to null after the user adds an entry.
+  final Map<String, DateTime?> _medicalInputDates = {};
 
   static const _bloodTypes = [
     'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'
@@ -49,8 +62,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     _dob = p?.dob;
 
-    _conditions = List<String>.from(p?.conditions ?? []);
-
     for (final med in (p?.medications ?? [])) {
       _medCtrls.add({
         'name': TextEditingController(text: med['name'] ?? ''),
@@ -58,24 +69,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'frequency': TextEditingController(text: med['frequency'] ?? ''),
       });
     }
-
-    _emNameCtrl = TextEditingController(
-        text: p?.emergencyContact?['name'] ?? '');
-    _emPhoneCtrl = TextEditingController(
-        text: p?.emergencyContact?['phone'] ?? '');
   }
 
   @override
   void dispose() {
     _heightCtrl.dispose();
     _weightCtrl.dispose();
-    _conditionCtrl.dispose();
-    _emNameCtrl.dispose();
-    _emPhoneCtrl.dispose();
     for (final m in _medCtrls) {
       m['name']!.dispose();
       m['dosage']!.dispose();
       m['frequency']!.dispose();
+    }
+    for (final c in _medicalInputCtrls.values) {
+      c.dispose();
     }
     super.dispose();
   }
@@ -108,15 +114,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_bmi < 25) return Colors.green;
     if (_bmi < 30) return Colors.orange;
     return Colors.red;
-  }
-
-  void _addCondition() {
-    final text = _conditionCtrl.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _conditions.add(text);
-      _conditionCtrl.clear();
-    });
   }
 
   void _addMedication() {
@@ -162,12 +159,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'bloodType': _bloodType,
       'height': double.tryParse(_heightCtrl.text) ?? 0,
       'weight': double.tryParse(_weightCtrl.text) ?? 0,
-      'conditions': _conditions,
       'medications': meds,
-      'emergencyContact': {
-        'name': _emNameCtrl.text,
-        'phone': _emPhoneCtrl.text,
-      },
     });
 
     Get.back();
@@ -344,110 +336,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 28),
 
-            // ── Medical conditions ──────────────────────────────────────────
-            _sectionHeader('edit.section.conditions'.tr),
+            // ── Standardized medical information (EHDS / FHIR-aligned) ──────
+            _medicalInfoHeader(),
+            _medicalDisclaimer(),
+            const SizedBox(height: 16),
+            _medicalSection(
+                'allergies', 'edit.medical.section.allergies'.tr),
+            _legacyMedicationsSubsection(
+                'edit.medical.section.current_meds'.tr),
+            _medicalSection('currentDiagnoses',
+                'edit.medical.section.current_diagnoses'.tr),
+            _medicalSection(
+                'pastIllnesses', 'edit.medical.section.past_illnesses'.tr),
+            _medicalSection(
+                'implants', 'edit.medical.section.implants'.tr),
+            _medicalSection(
+                'vaccinations', 'edit.medical.section.vaccinations'.tr),
 
-            if (_conditions.isNotEmpty) ...[
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _conditions.asMap().entries.map((e) => Chip(
-                      label: Text(e.value,
-                          style: const TextStyle(fontSize: 14)),
-                      deleteIcon:
-                          const Icon(Icons.close_rounded, size: 16),
-                      onDeleted: () => setState(
-                          () => _conditions.removeAt(e.key)),
-                      backgroundColor:
-                          Colors.blue.withOpacity(0.07),
-                      side: BorderSide(
-                          color: Colors.blue.withOpacity(0.25)),
-                    )).toList(),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _conditionCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'edit.conditions.hint'.tr,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                    ),
-                    onSubmitted: (_) => _addCondition(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _addCondition,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066CC),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                  ),
-                  child: Text('edit.conditions.add'.tr),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // ── Medications ─────────────────────────────────────────────────
-            _sectionHeader('edit.section.medications'.tr),
-
-            ..._medCtrls.asMap().entries
-                .map((e) => _medicationCard(e.key, e.value)),
-
-            OutlinedButton.icon(
-              onPressed: _addMedication,
-              icon: const Icon(Icons.add_rounded),
-              label: Text('edit.med.add'.tr),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12),
-                side: const BorderSide(color: Color(0xFF0066CC)),
-                foregroundColor: const Color(0xFF0066CC),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // ── Emergency contact ───────────────────────────────────────────
-            _sectionHeader('edit.section.emergency'.tr),
-
-            TextFormField(
-              controller: _emNameCtrl,
-              decoration: InputDecoration(
-                labelText: 'edit.emergency.name'.tr,
-                prefixIcon: const Icon(Icons.person_outline_rounded),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _emPhoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'edit.emergency.phone'.tr,
-                prefixIcon: const Icon(Icons.phone_outlined),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-
-            const SizedBox(height: 32),
 
             SizedBox(
               width: double.infinity,
@@ -481,6 +387,237 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Color(0xFF0066CC))),
+    );
+  }
+
+  // ── Standardized medical entries ──────────────────────────────────────────
+
+  Widget _medicalInfoHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        'edit.medical.section_header'.tr,
+        style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF0066CC),
+        ),
+      ),
+    );
+  }
+
+  Widget _medicalDisclaimer() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        border: Border.all(color: const Color(0xFFE6C200)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFF8A6D00), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'edit.medical.disclaimer'.tr,
+              style: const TextStyle(
+                  fontSize: 13.5, color: Color(0xFF5C4A00), height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _medicalSection(String category, String title) {
+    final inputCtrl = _medicalInputCtrls[category]!;
+    final isDated = _datedCategories.contains(category);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(title),
+          Obx(() {
+            // Bind to patient.value so the chip list rebuilds after writes.
+            _ctrl.patient.value;
+            final entries = _ctrl.medicalEntriesFor(category);
+            if (entries.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: entries
+                    .map((e) => Chip(
+                          label: Text(_chipLabel(e),
+                              style: const TextStyle(fontSize: 14)),
+                          deleteIcon:
+                              const Icon(Icons.close_rounded, size: 16),
+                          onDeleted: () => _ctrl.removeMedicalEntry(
+                              category: category, id: e.id),
+                          backgroundColor:
+                              Colors.blue.withOpacity(0.07),
+                          side: BorderSide(
+                              color: Colors.blue.withOpacity(0.25)),
+                        ))
+                    .toList(),
+              ),
+            );
+          }),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: inputCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: 'edit.medical.hint'.tr,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                  ),
+                  onSubmitted: (_) => _submitMedicalEntry(category),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => _submitMedicalEntry(category),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0066CC),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                ),
+                child: Text('edit.medical.add'.tr),
+              ),
+            ],
+          ),
+          if (isDated) _medicalDateRow(category),
+        ],
+      ),
+    );
+  }
+
+  // Inline date picker row shown under the text input for dated categories
+  // (past illnesses, implants, vaccinations). Optional — leave blank to add
+  // an entry without a date.
+  Widget _medicalDateRow(String category) {
+    final selected = _medicalInputDates[category];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        onTap: () => _pickMedicalDate(category),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined,
+                  size: 18, color: Color(0xFF0066CC)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selected != null
+                      ? _formatDate(selected)
+                      : 'edit.medical.date_add'.tr,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selected != null
+                        ? Colors.black87
+                        : Colors.grey.shade700,
+                    fontWeight: selected != null
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+              if (selected != null)
+                GestureDetector(
+                  onTap: () => setState(
+                      () => _medicalInputDates[category] = null),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(Icons.close_rounded,
+                        size: 18, color: Colors.grey),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickMedicalDate(String category) async {
+    final initial = _medicalInputDates[category] ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => _medicalInputDates[category] = picked);
+    }
+  }
+
+  String _formatDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  String _chipLabel(MedicalEntry e) {
+    if (e.occurredOn == null) return e.displayText;
+    return '${e.displayText} · ${_formatDate(e.occurredOn!)}';
+  }
+
+  // Reuses the legacy name/dosage/frequency medication cards inside the
+  // Medical Information block, taking the slot that previously rendered
+  // structured currentMedications chips. Persists via the existing
+  // `medications` field on the Patient model when the user hits Save.
+  Widget _legacyMedicationsSubsection(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(title),
+          ..._medCtrls.asMap().entries
+              .map((e) => _medicationCard(e.key, e.value)),
+          OutlinedButton.icon(
+            onPressed: _addMedication,
+            icon: const Icon(Icons.add_rounded),
+            label: Text('edit.med.add'.tr),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              side: const BorderSide(color: Color(0xFF0066CC)),
+              foregroundColor: const Color(0xFF0066CC),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitMedicalEntry(String category) async {
+    final ctrl = _medicalInputCtrls[category]!;
+    final text = ctrl.text.trim();
+    if (text.isEmpty) return;
+    final occurredOn = _medicalInputDates[category];
+    ctrl.clear();
+    setState(() => _medicalInputDates[category] = null);
+    await _ctrl.addMedicalEntry(
+      category: category,
+      displayText: text,
+      occurredOn: occurredOn,
     );
   }
 
