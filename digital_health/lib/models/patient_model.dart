@@ -60,6 +60,49 @@ class Patient {
     return 'Obese';
   }
 
+  Patient copyWith({
+    String? name,
+    String? email,
+    String? profileImage,
+    DateTime? dob,
+    String? bloodType,
+    double? height,
+    double? weight,
+    List<String>? conditions,
+    List<Map<String, String>>? medications,
+    Map<String, dynamic>? vitals,
+    Map<String, String>? emergencyContact,
+    List<String>? authorizedCaregivers,
+    List<MedicalEntry>? allergies,
+    List<MedicalEntry>? currentMedications,
+    List<MedicalEntry>? currentDiagnoses,
+    List<MedicalEntry>? pastIllnesses,
+    List<MedicalEntry>? implants,
+    List<MedicalEntry>? vaccinations,
+  }) {
+    return Patient(
+      id: id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      profileImage: profileImage ?? this.profileImage,
+      dob: dob ?? this.dob,
+      bloodType: bloodType ?? this.bloodType,
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      conditions: conditions ?? this.conditions,
+      medications: medications ?? this.medications,
+      vitals: vitals ?? this.vitals,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      authorizedCaregivers: authorizedCaregivers ?? this.authorizedCaregivers,
+      allergies: allergies ?? this.allergies,
+      currentMedications: currentMedications ?? this.currentMedications,
+      currentDiagnoses: currentDiagnoses ?? this.currentDiagnoses,
+      pastIllnesses: pastIllnesses ?? this.pastIllnesses,
+      implants: implants ?? this.implants,
+      vaccinations: vaccinations ?? this.vaccinations,
+    );
+  }
+
   int get age {
     if (dob == null) return 0;
     final now = DateTime.now();

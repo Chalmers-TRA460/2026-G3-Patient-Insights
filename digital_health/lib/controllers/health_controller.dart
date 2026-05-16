@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient_model.dart';
+import '../models/medical_entry_model.dart';
 import '../services/ai_service.dart';
 import 'settings_controller.dart';
 
@@ -298,6 +299,146 @@ class HealthController extends GetxController {
     } catch (e) {
       Get.snackbar('Error', 'Failed to update health profile');
     }
+  }
+
+  // ── Standardized medical entries (allergies, meds, diagnoses, …) ─────────
+
+  // The six EHDS / FHIR-aligned categories editable on the profile screen.
+  // Mapped to the matching field names on Patient + Firestore documents.
+  static const Set<String> medicalEntryCategories = {
+    'allergies',
+    'currentMedications',
+    'currentDiagnoses',
+    'pastIllnesses',
+    'implants',
+    'vaccinations',
+  };
+
+  List<MedicalEntry> medicalEntriesFor(String category) {
+    final p = patient.value;
+    if (p == null) return const [];
+    switch (category) {
+      case 'allergies':
+        return p.allergies;
+      case 'currentMedications':
+        return p.currentMedications;
+      case 'currentDiagnoses':
+        return p.currentDiagnoses;
+      case 'pastIllnesses':
+        return p.pastIllnesses;
+      case 'implants':
+        return p.implants;
+      case 'vaccinations':
+        return p.vaccinations;
+      default:
+        return const [];
+    }
+  }
+
+  // Apply a category list to patient.value without a network round-trip.
+  // The reactive Rxn fires its listeners as soon as the new Patient is set,
+  // so any Obx watching the patient rebuilds immediately.
+  void _applyCategoryLocally(String category, List<MedicalEntry> list) {
+    final p = patient.value;
+    if (p == null) return;
+    switch (category) {
+      case 'allergies':
+        patient.value = p.copyWith(allergies: list);
+        break;
+      case 'currentMedications':
+        patient.value = p.copyWith(currentMedications: list);
+        break;
+      case 'currentDiagnoses':
+        patient.value = p.copyWith(currentDiagnoses: list);
+        break;
+      case 'pastIllnesses':
+        patient.value = p.copyWith(pastIllnesses: list);
+        break;
+      case 'implants':
+        patient.value = p.copyWith(implants: list);
+        break;
+      case 'vaccinations':
+        patient.value = p.copyWith(vaccinations: list);
+        break;
+    }
+  }
+
+  // Single-write persist. Skips the full document re-fetch (and the extra
+  // email-refresh write) that updatePatientData triggers, so chip add/remove
+  // feels instant instead of waiting on three network round-trips.
+  Future<void> _persistCategory(
+      String category, List<MedicalEntry> list) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        category: list.map((e) => e.toJson()).toList(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('persist $category failed: $e');
+    }
+  }
+
+  Future<void> addMedicalEntry({
+    required String category,
+    required String displayText,
+    String? codedAnswer,
+    DateTime? occurredOn,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final trimmed = displayText.trim();
+    if (trimmed.isEmpty) return;
+
+    final now = DateTime.now();
+    final entry = MedicalEntry(
+      id: _firestore.collection('users').doc().id,
+      displayText: trimmed,
+      codedAnswer: codedAnswer,
+      dateAdded: now,
+      lastUpdated: now,
+      occurredOn: occurredOn,
+      // source defaults to 'patient_reported' — the only origin available
+      // from the patient-facing edit screen today.
+    );
+
+    final updated = [...medicalEntriesFor(category), entry];
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
+  }
+
+  Future<void> updateMedicalEntry({
+    required String category,
+    required String id,
+    required String displayText,
+    String? codedAnswer,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final trimmed = displayText.trim();
+    if (trimmed.isEmpty) return;
+
+    final now = DateTime.now();
+    final updated = medicalEntriesFor(category)
+        .map((e) => e.id == id
+            ? e.copyWith(
+                displayText: trimmed,
+                codedAnswer: codedAnswer ?? e.codedAnswer,
+                lastUpdated: now,
+              )
+            : e)
+        .toList();
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
+  }
+
+  Future<void> removeMedicalEntry({
+    required String category,
+    required String id,
+  }) async {
+    if (!medicalEntryCategories.contains(category)) return;
+    final updated =
+        medicalEntriesFor(category).where((e) => e.id != id).toList();
+    _applyCategoryLocally(category, updated);
+    await _persistCategory(category, updated);
   }
 
   // ── Family access ────────────────────────────────────────────────────────────

@@ -12,6 +12,11 @@ class MedicalEntry {
   final DateTime dateAdded;
   final DateTime lastUpdated;
   final String source;
+  // The clinically meaningful date for the entry (vaccine given, illness
+  // experienced, implant placed). Distinct from dateAdded — that's only when
+  // the patient typed this into the app. Maps to FHIR occurrence fields
+  // (Immunization.occurrenceDateTime, Condition.onsetDateTime, etc.).
+  final DateTime? occurredOn;
 
   MedicalEntry({
     required this.id,
@@ -20,6 +25,7 @@ class MedicalEntry {
     required this.dateAdded,
     required this.lastUpdated,
     this.source = 'patient_reported',
+    this.occurredOn,
   });
 
   MedicalEntry copyWith({
@@ -29,6 +35,7 @@ class MedicalEntry {
     DateTime? dateAdded,
     DateTime? lastUpdated,
     String? source,
+    DateTime? occurredOn,
   }) {
     return MedicalEntry(
       id: id ?? this.id,
@@ -37,6 +44,7 @@ class MedicalEntry {
       dateAdded: dateAdded ?? this.dateAdded,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       source: source ?? this.source,
+      occurredOn: occurredOn ?? this.occurredOn,
     );
   }
 
@@ -49,6 +57,7 @@ class MedicalEntry {
       dateAdded: _parseDate(json['dateAdded']) ?? now,
       lastUpdated: _parseDate(json['lastUpdated']) ?? now,
       source: (json['source'] as String?) ?? 'patient_reported',
+      occurredOn: _parseDate(json['occurredOn']),
     );
   }
 
@@ -60,6 +69,7 @@ class MedicalEntry {
       'dateAdded': dateAdded.toIso8601String(),
       'lastUpdated': lastUpdated.toIso8601String(),
       'source': source,
+      'occurredOn': occurredOn?.toIso8601String(),
     };
   }
 

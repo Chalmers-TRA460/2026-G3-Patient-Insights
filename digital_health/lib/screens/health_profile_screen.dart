@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import '../models/medical_entry_model.dart';
 import '../widgets/viewing_banner.dart';
 import 'edit_profile_screen.dart';
 
@@ -118,6 +119,37 @@ class HealthProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
+              // Height & Weight
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMeasurementCard(
+                      context,
+                      'edit.height'.tr,
+                      patient.height > 0
+                          ? patient.height.toStringAsFixed(0)
+                          : '—',
+                      'cm',
+                      Icons.height_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildMeasurementCard(
+                      context,
+                      'edit.weight'.tr,
+                      patient.weight > 0
+                          ? patient.weight.toStringAsFixed(0)
+                          : '—',
+                      'kg',
+                      Icons.monitor_weight_rounded,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
               // BMI
               Container(
                 padding: const EdgeInsets.all(20),
@@ -152,23 +184,9 @@ class HealthProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              _buildSectionHeader('profile.conditions'.tr),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: patient.conditions
-                    .map((c) => Chip(
-                          label: Text(c,
-                              style: const TextStyle(fontSize: 16)),
-                          backgroundColor:
-                              Colors.blue.withOpacity(0.05),
-                          side: BorderSide(
-                              color: Colors.blue.withOpacity(0.2)),
-                        ))
-                    .toList(),
-              ),
+              _buildMedicalDisclaimer(),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               _buildSectionHeader('profile.medications'.tr),
               ...patient.medications.map((m) => ListTile(
@@ -183,39 +201,19 @@ class HealthProfileScreen extends StatelessWidget {
                         style: const TextStyle(fontSize: 16)),
                   )),
 
-              const SizedBox(height: 30),
-
-              _buildSectionHeader('profile.emergency'.tr),
-              if (patient.emergencyContact != null)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: Colors.red.withOpacity(0.1)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.contact_phone_rounded,
-                          color: Colors.red, size: 30),
-                      const SizedBox(width: 15),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              patient.emergencyContact!['name'] ?? '',
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold)),
-                          Text(
-                              patient.emergencyContact!['phone'] ?? '',
-                              style: const TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              _buildMedicalChipSection(
+                  'edit.medical.section.allergies'.tr, patient.allergies),
+              _buildMedicalChipSection(
+                  'edit.medical.section.current_diagnoses'.tr,
+                  patient.currentDiagnoses),
+              _buildMedicalChipSection(
+                  'edit.medical.section.past_illnesses'.tr,
+                  patient.pastIllnesses),
+              _buildMedicalChipSection(
+                  'edit.medical.section.implants'.tr, patient.implants),
+              _buildMedicalChipSection(
+                  'edit.medical.section.vaccinations'.tr,
+                  patient.vaccinations),
 
               const SizedBox(height: 40),
               SizedBox(
@@ -266,12 +264,127 @@ class HealthProfileScreen extends StatelessWidget {
     );
   }
 
+  // Rounded card matching the BMI tile style, used to show Height / Weight
+  // as a two-up row above BMI.
+  Widget _buildMeasurementCard(BuildContext context, String label,
+      String value, String unit, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 32, color: Theme.of(context).primaryColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 14, color: Colors.grey)),
+                const SizedBox(height: 2),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      TextSpan(text: value),
+                      TextSpan(
+                        text: value == '—' ? '' : ' $unit',
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Text(title,
           style: const TextStyle(
               fontSize: 22, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  // Renders a chip-Wrap section matching the style used for Medical
+  // Conditions above. Hidden entirely when the category is empty so users
+  // who haven't filled in (e.g.) implants don't see a stub header.
+  Widget _buildMedicalChipSection(String title, List<MedicalEntry> entries) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(title),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: entries
+                .map((e) => Chip(
+                      label: Text(_chipLabel(e),
+                          style: const TextStyle(fontSize: 16)),
+                      backgroundColor: Colors.blue.withOpacity(0.05),
+                      side: BorderSide(
+                          color: Colors.blue.withOpacity(0.2)),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _chipLabel(MedicalEntry e) {
+    if (e.occurredOn == null) return e.displayText;
+    final d = e.occurredOn!;
+    final iso =
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return '${e.displayText} · $iso';
+  }
+
+  // Mirrors the yellow self-reported disclaimer shown above the same
+  // categories on the edit screen, so viewers know this data is patient-
+  // reported and not clinically verified.
+  Widget _buildMedicalDisclaimer() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        border: Border.all(color: const Color(0xFFE6C200)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFF8A6D00), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'edit.medical.disclaimer'.tr,
+              style: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFF5C4A00),
+                  height: 1.35),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
