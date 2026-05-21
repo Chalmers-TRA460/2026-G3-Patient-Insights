@@ -673,17 +673,6 @@ class HealthController extends GetxController {
 
     isGeneratingSummary.value = true;
     try {
-      final targetLanguage =
-          Get.find<SettingsController>().resolvedLanguageName;
-
-      final summary = await AiService.summarizeVisitPrep(
-        reason: visitTitle.value.trim(),
-        questions: cleanQuestions,
-        targetLanguage: targetLanguage,
-      );
-
-      visitPrepSummary.value = summary;
-
       final fhirResponse = _buildFhirResponseJson(user.uid);
 
       final entry = <String, dynamic>{
@@ -693,7 +682,7 @@ class HealthController extends GetxController {
             : DateTime.now().toIso8601String().split('T')[0],
         'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
-        'summary': summary,
+        'summary': '',
       };
 
       final updated = List<Map<String, dynamic>>.from(

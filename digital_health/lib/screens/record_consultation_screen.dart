@@ -281,6 +281,72 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     }
   }
 
+  // ── Questions reminder panel ──────────────────────────────────────────────
+
+  Widget _buildQuestionsPanel() {
+    return Obx(() {
+      final questions = _healthController.visitQuestions
+          .where((q) => q.trim().isNotEmpty)
+          .toList();
+      if (questions.isEmpty) return const SizedBox.shrink();
+
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 24),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF86EFAC)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.checklist_rounded,
+                    color: Color(0xFF16A34A), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Remember to ask:',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF15803D),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...questions.asMap().entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${e.key + 1}. ',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF16A34A),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          e.value,
+                          style: const TextStyle(
+                              fontSize: 16, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      );
+    });
+  }
+
   // ── UI helpers ────────────────────────────────────────────────────────────
 
   String get _timerLabel {
@@ -361,6 +427,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
                 ],
               ),
             ),
+            _buildQuestionsPanel(),
             if (_errorMessage.isNotEmpty) ...[
               const SizedBox(height: 20),
               Text(_errorMessage,
@@ -421,7 +488,8 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             const SizedBox(height: 8),
             const Text('Speak naturally — recording continuously',
                 style: TextStyle(fontSize: 15, color: Colors.grey)),
-            const SizedBox(height: 48),
+            _buildQuestionsPanel(),
+            const SizedBox(height: 32),
             FloatingActionButton.large(
               heroTag: 'stop',
               onPressed: _stopRecording,

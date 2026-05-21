@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
-import 'visit_prep_summary_screen.dart';
 
 class PrepareVisitScreen extends StatefulWidget {
   final int? editIndex;
@@ -85,10 +84,7 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
       return;
     }
     await _c.submitQuestionnaire(editIndex: widget.editIndex);
-    if (_c.visitPrepSummary.value.isNotEmpty) {
-      final idx = widget.editIndex ?? 0;
-      Get.off(() => VisitPrepSummaryScreen(data: _c.visitPreps[idx]));
-    }
+    Get.back();
   }
 
   @override
@@ -135,48 +131,62 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
             // ── Q2: Questions list ───────────────────────────────────────
             Text(
               'prep.section.questions'.tr,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               'prep.section.questions_sub'.tr,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 15, color: Colors.grey[600], height: 1.4),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
 
             ...List.generate(_questionControllers.length, (i) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 14),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 30,
-                      child: Text(
-                        '${i + 1}.',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[700]),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 18),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: primary.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: primary),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _questionControllers[i],
+                        minLines: 2,
+                        maxLines: 4,
                         decoration: InputDecoration(
                           hintText: 'prep.section.questions_hint'.tr,
+                          hintStyle: TextStyle(
+                              fontSize: 17, color: Colors.grey[400]),
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(14)),
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                              horizontal: 16, vertical: 16),
                         ),
-                        style: const TextStyle(fontSize: 16),
+                        style: const TextStyle(fontSize: 18, height: 1.4),
                         textInputAction: TextInputAction.next,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline,
-                          color: Colors.redAccent),
+                          color: Colors.redAccent, size: 26),
                       tooltip: 'prep.btn.remove_question'.tr,
                       onPressed: () => _removeQuestionField(i),
                     ),
