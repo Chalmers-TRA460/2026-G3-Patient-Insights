@@ -65,11 +65,23 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
             ? c.consultations[widget.index]
             : widget.consultation;
 
-        final linkedPrepIndex = visit['linkedVisitPrepIndex'] as int?;
-        final linkedPrep = (linkedPrepIndex != null &&
-                linkedPrepIndex < c.visitPreps.length)
-            ? c.visitPreps[linkedPrepIndex]
+        // Resolve linked prep by id (preferred) or legacy index. Both lookups
+        // search the full visitPreps list so an auto-archived prep is still
+        // visible on its consultation.
+        final linkedPrepId = visit['linkedVisitPrepId'] as String?;
+        final legacyPrepIndex = visit['linkedVisitPrepIndex'] as int?;
+        int? resolvedPrepIndex;
+        if (linkedPrepId != null) {
+          final i =
+              c.visitPreps.indexWhere((p) => p['id'] == linkedPrepId);
+          if (i != -1) resolvedPrepIndex = i;
+        }
+        resolvedPrepIndex ??= (legacyPrepIndex != null &&
+                legacyPrepIndex < c.visitPreps.length)
+            ? legacyPrepIndex
             : null;
+        final linkedPrep =
+            resolvedPrepIndex != null ? c.visitPreps[resolvedPrepIndex] : null;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -169,7 +181,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                         const SizedBox(width: 8),
                                         OutlinedButton.icon(
                                           onPressed: () => _pickVisitPrep(
-                                              context, c, linkedPrepIndex),
+                                              context, c, resolvedPrepIndex),
                                           icon: const Icon(
                                               Icons.swap_horiz_rounded,
                                               size: 16),
@@ -212,7 +224,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                   ] else ...[
                                     OutlinedButton.icon(
                                       onPressed: () => _pickVisitPrep(
-                                          context, c, linkedPrepIndex),
+                                          context, c, resolvedPrepIndex),
                                       icon: const Icon(
                                           Icons.add_circle_outline_rounded,
                                           size: 18),
@@ -297,12 +309,12 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                         Row(
                           children: [
                             const Icon(Icons.auto_awesome_rounded,
-                                color: Color(0xFF15803D)),
+                                color: Color(0xFF15803D), size: 26),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text('detail.brief_label'.tr,
                                   style: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 22,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF15803D))),
                             ),
@@ -319,9 +331,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                             maxLines: null,
                             minLines: 4,
                             style: const TextStyle(
-                                fontSize: 16,
-                                height: 1.7,
-                                color: Color(0xFF166534)),
+                                fontSize: 24,
+                                height: 1.55,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF14532D)),
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Colors.white,
@@ -385,19 +398,14 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                             ],
                           ),
                         ] else if (briefSummary.isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          ..._buildBriefPoints(briefSummary),
+                          const SizedBox(height: 18),
+                          const Divider(
+                              color: Color(0xFFBBF7D0),
+                              thickness: 1.5,
+                              height: 1),
                           const SizedBox(height: 14),
-                          Text.rich(
-                            TextSpan(
-                              children: _parseInlineBold(
-                                briefSummary,
-                                const TextStyle(
-                                    fontSize: 16,
-                                    height: 1.7,
-                                    color: Color(0xFF166534)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
                           Row(
                             children: [
                               OutlinedButton.icon(
@@ -407,9 +415,9 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                           _briefController.text = briefSummary;
                                           _editingBrief = true;
                                         }),
-                                icon: const Icon(Icons.edit_rounded, size: 16),
+                                icon: const Icon(Icons.edit_rounded, size: 18),
                                 label: Text('detail.edit_brief'.tr,
-                                    style: const TextStyle(fontSize: 14)),
+                                    style: const TextStyle(fontSize: 15)),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: const Color(0xFF15803D),
                                   side: const BorderSide(
@@ -425,12 +433,12 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                       ? null
                                       : () => _showHistorySheet(c, history),
                                   icon: const Icon(Icons.history_rounded,
-                                      size: 16,
+                                      size: 18,
                                       color: Color(0xFF15803D)),
                                   label: Text(
                                       'detail.previous_versions'.tr,
                                       style: const TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 15,
                                           color: Color(0xFF15803D),
                                           fontWeight: FontWeight.w600)),
                                   style: TextButton.styleFrom(
@@ -805,8 +813,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                           color: Theme.of(context).primaryColor)
                       : null,
                   onTap: () {
-                    c.updateConsultation(
-                        widget.index, {'linkedVisitPrepIndex': i});
+                    c.updateConsultation(widget.index, {
+                      'linkedVisitPrepId': prep['id'],
+                      'linkedVisitPrepIndex': null,
+                    });
                     Get.back();
                   },
                 );
@@ -816,8 +826,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
           if (current != null)
             TextButton(
               onPressed: () {
-                c.updateConsultation(
-                    widget.index, {'linkedVisitPrepIndex': null});
+                c.updateConsultation(widget.index, {
+                  'linkedVisitPrepId': null,
+                  'linkedVisitPrepIndex': null,
+                });
                 Get.back();
               },
               child: const Text('Remove this preparation',
@@ -886,6 +898,63 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
         ],
       ),
     );
+  }
+
+  // Splits the brief summary into individual points and renders each as its
+  // own row with a leading check icon. The brief is requested from the AI as
+  // a • bullet list; if the patient has edited it free-form, we fall back to
+  // splitting on newlines so points still stay visually distinct.
+  List<Widget> _buildBriefPoints(String text) {
+    const bodyStyle = TextStyle(
+      fontSize: 24,
+      height: 1.55,
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF14532D),
+    );
+
+    List<String> parts;
+    if (text.contains('•')) {
+      parts = text
+          .split('•')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    } else {
+      parts = text
+          .split(RegExp(r'\r?\n'))
+          .map((s) => s.replaceFirst(RegExp(r'^[\-\*•]\s*'), '').trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    if (parts.isEmpty) parts = [text.trim()];
+
+    return List<Widget>.generate(parts.length, (i) {
+      final isLast = i == parts.length - 1;
+      return Padding(
+        padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(top: 14, right: 14),
+              decoration: const BoxDecoration(
+                color: Color(0xFF15803D),
+                shape: BoxShape.circle,
+              ),
+            ),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: _parseInlineBold(parts[i], bodyStyle),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   // Splits the detailed summary into blocks separated by blank lines, treats

@@ -32,13 +32,20 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   final _transcriptController = TextEditingController();
 
   _Stage _stage = _Stage.idle;
+  bool _isPaused = false;
   String? _audioPath;
   Uint8List? _audioBytes;
   String _errorMessage = '';
 
   Timer? _timer;
   int _recordSeconds = 0;
-  bool _isPaused = false;
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _recordSeconds++);
+    });
+  }
 
   @override
   void dispose() {
@@ -121,27 +128,36 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     );
 
     _recordSeconds = 0;
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _recordSeconds++);
-    });
+    _startTimer();
 
     setState(() {
       _stage = _Stage.recording;
+      _isPaused = false;
       _errorMessage = '';
     });
   }
 
   Future<void> _pauseRecording() async {
-    await _recorder.pause();
+    if (_isPaused) return;
+    try {
+      await _recorder.pause();
+    } catch (e) {
+      setState(() => _errorMessage = 'Pause failed: $e');
+      return;
+    }
     _timer?.cancel();
     setState(() => _isPaused = true);
   }
 
   Future<void> _resumeRecording() async {
-    await _recorder.resume();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _recordSeconds++);
-    });
+    if (!_isPaused) return;
+    try {
+      await _recorder.resume();
+    } catch (e) {
+      setState(() => _errorMessage = 'Resume failed: $e');
+      return;
+    }
+    _startTimer();
     setState(() => _isPaused = false);
   }
 
@@ -149,7 +165,10 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     _timer?.cancel();
     _isPaused = false;
     final result = await _recorder.stop();
-    setState(() => _stage = _Stage.transcribing);
+    setState(() {
+      _stage = _Stage.transcribing;
+      _isPaused = false;
+    });
 
     if (kIsWeb && result != null && result.isNotEmpty) {
       // Web: result is a blob: URL — fetch bytes from it
@@ -231,7 +250,12 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     }
     setState(() => _stage = _Stage.summarizing);
     try {
-      await _healthController.saveConsultationTranscript(text);
+      final linkedId = _healthController.activeVisitPrepId.value;
+      await _healthController.saveConsultationTranscript(
+        text,
+        linkedVisitPrepId: linkedId,
+      );
+      await _healthController.archiveActiveVisitPrep();
       _healthController.clearVisitNotes();
       Get.off(() => const ConsultationHistoryScreen());
     } catch (e) {
@@ -264,6 +288,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        final linkedId = _healthController.activeVisitPrepId.value;
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -277,9 +302,11 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'detailedSummary': result['detailed_personalized'] ?? '',
           'reason': _healthController.visitTitle.value,
           'questions': _healthController.visitQuestions.toList(),
+          if (linkedId != null) 'linkedVisitPrepId': linkedId,
         });
 
         await _healthController.fetchConsultations();
+        await _healthController.archiveActiveVisitPrep();
         _healthController.clearVisitNotes();
       }
 

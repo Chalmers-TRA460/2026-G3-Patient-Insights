@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../controllers/health_controller.dart';
 import '../models/questionnaire_model.dart';
 import 'record_consultation_screen.dart';
 
 class VisitPrepSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> data;
   const VisitPrepSummaryScreen({super.key, required this.data});
+
+  void _startRecording() {
+    Get.find<HealthController>().activateVisitPrep(data);
+    Get.to(() => const RecordConsultationScreen());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,8 +167,7 @@ class VisitPrepSummaryScreen extends StatelessWidget {
                     label: const Text('Start Recording Now',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
-                    onPressed: () => Get.to(
-                        () => const RecordConsultationScreen()),
+                    onPressed: _startRecording,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade600,
                       foregroundColor: Colors.white,
@@ -384,6 +389,4 @@ class VisitPrepSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _summaryText(String text) =>
-      Text(text, style: const TextStyle(fontSize: 16, height: 1.7));
 }
