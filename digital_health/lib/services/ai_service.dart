@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -233,23 +234,27 @@ You are a medical education assistant helping a patient check what they understo
 
 Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly 5 objects.
 
-Each object must have exactly these four keys:
+Each object must have exactly these five keys:
 {
   "question": "...",
   "options": ["...", "...", "...", "..."],
   "correctIndex": 0,
-  "explanation": "..."
+  "explanation": "...",
+  "notMentioned": false
 }
 
 STRICT GROUNDING RULE (mandatory):
 For any question about medications, dosages, next steps, tests, or follow-up appointments, you MUST base the question ONLY on information explicitly spoken in the transcript. If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details. Never substitute standard medical timelines or typical clinical practice for what was actually said.
 
 LIFESTYLE FLEXIBILITY (limited exception):
-You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, you MUST set "notMentioned": true for that question, and the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+
+For every question that IS grounded in the transcript, set "notMentioned": false.
 
 Additional rules:
 - Each question must have exactly 4 options.
 - correctIndex is the zero-based index of the correct option.
+- IMPORTANT: vary the position of the correct option across questions — do not always put the correct answer first. Distribute correctIndex values across 0, 1, 2, and 3.
 - explanation is 1–2 sentences in plain language.
 - Do NOT ask about diagnoses or test results — only actionable items the patient must remember.
 - Write all text in $targetLanguage.
@@ -267,14 +272,28 @@ $transcript
           .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
           .trim();
       final decoded = jsonDecode(cleaned) as List<dynamic>;
-      return decoded
+      final parsed = decoded
           .whereType<Map<String, dynamic>>()
           .map(QuizQuestion.fromJson)
           .where((q) => q.question.isNotEmpty && q.options.length >= 2)
           .toList();
+      return parsed.map(_shuffleOptions).toList();
     } catch (_) {
       return [];
     }
+  }
+
+  // Randomise the order of options so the correct answer isn't always at A.
+  static QuizQuestion _shuffleOptions(QuizQuestion q) {
+    if (q.options.length < 2) return q;
+    final indices = List<int>.generate(q.options.length, (i) => i)
+      ..shuffle(Random());
+    final newOptions = indices.map((i) => q.options[i]).toList();
+    final newCorrect = indices.indexOf(q.correctIndex);
+    return q.copyWith(
+      options: newOptions,
+      correctIndex: newCorrect < 0 ? 0 : newCorrect,
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

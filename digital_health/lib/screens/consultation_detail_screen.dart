@@ -25,6 +25,7 @@ class ConsultationDetailScreen extends StatefulWidget {
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
   bool _detailExpanded = false;
+  bool _transcriptExpanded = false;
   bool _isGeneratingQuiz = false;
   bool _editingBrief = false;
   final TextEditingController _briefController = TextEditingController();
@@ -571,42 +572,107 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
 
               const SizedBox(height: 25),
 
-              // ── Full Conversation Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF475569)),
-                        const SizedBox(width: 10),
-                        Text('detail.transcript'.tr,
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF334155))),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      visit['transcript'] as String? ??
-                          'detail.no_transcript'.tr,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF475569),
-                          height: 1.6),
-                    ),
-                  ],
-                ),
-              ),
+              // ── Full Conversation Card (collapsible, collapsed by default) ──
+              Builder(builder: (_) {
+                final transcript = visit['transcript'] as String? ??
+                    'detail.no_transcript'.tr;
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tappable header — toggles the conversation open/closed
+                      InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () => setState(
+                            () => _transcriptExpanded = !_transcriptExpanded),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.chat_bubble_outline_rounded,
+                                  color: Color(0xFF475569)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text('detail.transcript'.tr,
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF334155))),
+                              ),
+                              Icon(
+                                _transcriptExpanded
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                                color: const Color(0xFF475569),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Transcript body — short preview when collapsed, full
+                      // text plus a "Show less" button when expanded.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        child: AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topCenter,
+                          child: _transcriptExpanded
+                              ? Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      transcript,
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Color(0xFF475569),
+                                          height: 1.6),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextButton.icon(
+                                        onPressed: () => setState(() =>
+                                            _transcriptExpanded = false),
+                                        icon: const Icon(
+                                            Icons.expand_less_rounded,
+                                            color: Color(0xFF475569)),
+                                        label: Text('detail.show_less'.tr,
+                                            style: const TextStyle(
+                                                color: Color(0xFF475569),
+                                                fontWeight:
+                                                    FontWeight.w600)),
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          tapTargetSize: MaterialTapTargetSize
+                                              .shrinkWrap,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  transcript,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF475569),
+                                      height: 1.6),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: 20),
 
               // ── Test My Knowledge ──

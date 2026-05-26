@@ -262,6 +262,8 @@ class AppTranslations extends Translations {
       'quiz.n_questions': '@count questions',
       'quiz.history_empty': 'No quizzes yet',
       'quiz.history_empty_desc': 'Open a past visit and tap "Test My Knowledge" to create your first quiz.',
+      'quiz.not_mentioned_title': 'Not mentioned in your visit',
+      'quiz.not_mentioned_desc': 'This question covers general best-practice advice — your doctor did not specifically discuss it during this consultation.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Past Visits',
@@ -788,6 +790,8 @@ class AppTranslations extends Translations {
       'quiz.n_questions': '@count frågor',
       'quiz.history_empty': 'Inga quiz ännu',
       'quiz.history_empty_desc': 'Öppna ett tidigare besök och tryck "Testa min kunskap" för att skapa ditt första quiz.',
+      'quiz.not_mentioned_title': 'Nämndes inte under ditt besök',
+      'quiz.not_mentioned_desc': 'Den här frågan handlar om allmänna råd — din läkare diskuterade inte detta specifikt under konsultationen.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Tidigare besök',
