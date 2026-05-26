@@ -32,12 +32,20 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   final _transcriptController = TextEditingController();
 
   _Stage _stage = _Stage.idle;
+  bool _isPaused = false;
   String? _audioPath;
   Uint8List? _audioBytes;
   String _errorMessage = '';
 
   Timer? _timer;
   int _recordSeconds = 0;
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _recordSeconds++);
+    });
+  }
 
   @override
   void dispose() {
@@ -120,20 +128,46 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     );
 
     _recordSeconds = 0;
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _recordSeconds++);
-    });
+    _startTimer();
 
     setState(() {
       _stage = _Stage.recording;
+      _isPaused = false;
       _errorMessage = '';
     });
+  }
+
+  Future<void> _pauseRecording() async {
+    if (_isPaused) return;
+    try {
+      await _recorder.pause();
+    } catch (e) {
+      setState(() => _errorMessage = 'Pause failed: $e');
+      return;
+    }
+    _timer?.cancel();
+    setState(() => _isPaused = true);
+  }
+
+  Future<void> _resumeRecording() async {
+    if (!_isPaused) return;
+    try {
+      await _recorder.resume();
+    } catch (e) {
+      setState(() => _errorMessage = 'Resume failed: $e');
+      return;
+    }
+    _startTimer();
+    setState(() => _isPaused = false);
   }
 
   Future<void> _stopRecording() async {
     _timer?.cancel();
     final result = await _recorder.stop();
-    setState(() => _stage = _Stage.transcribing);
+    setState(() {
+      _stage = _Stage.transcribing;
+      _isPaused = false;
+    });
 
     if (kIsWeb && result != null && result.isNotEmpty) {
       // Web: result is a blob: URL — fetch bytes from it
@@ -457,6 +491,13 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   // recording ────────────────────────────────────────────────────────────────
   Widget _buildRecording() {
+    final badgeColor = _isPaused ? const Color(0xFFD97706) : Colors.red;
+    final badgeLabel =
+        _isPaused ? 'record.paused'.tr : 'record.recording'.tr;
+    final hint = _isPaused
+        ? 'record.paused_hint'.tr
+        : 'record.recording_hint'.tr;
+
     return Center(
       child: SingleChildScrollView(
         child: Column(
@@ -466,9 +507,9 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: badgeColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.red.withOpacity(0.4)),
+                border: Border.all(color: badgeColor.withOpacity(0.4)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -476,13 +517,13 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
                   Container(
                     width: 12,
                     height: 12,
-                    decoration: const BoxDecoration(
-                        color: Colors.red, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: badgeColor, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 10),
-                  const Text('RECORDING',
+                  Text(badgeLabel,
                       style: TextStyle(
-                          color: Colors.red,
+                          color: badgeColor,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5)),
                 ],
@@ -494,19 +535,45 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
                     fontSize: 48,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Speak naturally — recording continuously',
-                style: TextStyle(fontSize: 15, color: Colors.grey)),
+            Text(hint,
+                style: const TextStyle(fontSize: 15, color: Colors.grey)),
             _buildQuestionsPanel(),
             const SizedBox(height: 32),
-            FloatingActionButton.large(
-              heroTag: 'stop',
-              onPressed: _stopRecording,
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.stop_rounded, color: Colors.white, size: 36),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FloatingActionButton(
+                  heroTag: 'pause',
+                  onPressed: _isPaused ? _resumeRecording : _pauseRecording,
+                  backgroundColor:
+                      _isPaused ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                  tooltip: _isPaused ? 'record.resume'.tr : 'record.pause'.tr,
+                  child: Icon(
+                    _isPaused
+                        ? Icons.play_arrow_rounded
+                        : Icons.pause_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 28),
+                FloatingActionButton.large(
+                  heroTag: 'stop',
+                  onPressed: _stopRecording,
+                  backgroundColor: Colors.red,
+                  child: const Icon(Icons.stop_rounded,
+                      color: Colors.white, size: 36),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            const Text('Tap to stop',
-                style: TextStyle(fontSize: 14, color: Colors.grey)),
+            Text(
+              _isPaused
+                  ? 'record.tap_resume_or_stop'.tr
+                  : 'record.tap_pause_or_stop'.tr,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
