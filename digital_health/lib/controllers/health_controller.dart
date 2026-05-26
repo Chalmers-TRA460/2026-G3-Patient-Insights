@@ -185,18 +185,35 @@ class HealthController extends GetxController {
     try {
       final targetLanguage =
           Get.find<SettingsController>().resolvedLanguageName;
+      final linkedPrep = _linkedPrepForVisit(visit);
+      final prepTitle = _prepTitle(linkedPrep);
+      final prepQuestions = _prepQuestions(linkedPrep);
+
       final result = await AiService.summarizeConsultation(
         transcript,
         patient: patient.value,
-        preparationTitle: _linkedPrepTitleForVisit(visit),
+        preparationTitle: prepTitle,
         targetLanguage: targetLanguage,
       );
+
+      // If the visit had a linked preparation with questions, ask the AI to
+      // flag any that the doctor never addressed so the patient knows what
+      // to bring up next time.
+      List<String> unanswered = const [];
+      if (prepQuestions.isNotEmpty) {
+        unanswered = await AiService.findUnansweredQuestions(
+          transcript: transcript,
+          preparedQuestions: prepQuestions,
+        );
+      }
+
       final aiTitle = (result['visit_title'] ?? '').trim();
       final existingTitle = (visit['doctorName'] as String? ?? '').trim();
       final defaultTitle = 'record.doctor'.tr;
       await updateConsultation(index, {
         'briefSummary': result['brief_actionable'] ?? '',
         'detailedSummary': result['detailed_personalized'] ?? '',
+        'unansweredQuestions': unanswered,
         // Only overwrite the title if the AI produced one AND the user hasn't
         // already given the visit a custom title (anything other than the
         // default placeholder).
@@ -211,25 +228,36 @@ class HealthController extends GetxController {
     }
   }
 
-  // Resolve the linked preparation title for a visit, by id or legacy index.
-  // Returns null if nothing is linked or the title is empty.
-  String? _linkedPrepTitleForVisit(Map<String, dynamic> visit) {
+  // Resolve the linked preparation document for a visit, by id or legacy
+  // index. Returns null if nothing is linked.
+  Map<String, dynamic>? _linkedPrepForVisit(Map<String, dynamic> visit) {
     final linkedId = visit['linkedVisitPrepId'] as String?;
     final legacyIndex = visit['linkedVisitPrepIndex'] as int?;
-    Map<String, dynamic>? prep;
     if (linkedId != null) {
       final i = visitPreps.indexWhere((p) => p['id'] == linkedId);
-      if (i != -1) prep = visitPreps[i];
+      if (i != -1) return visitPreps[i];
     }
-    if (prep == null &&
-        legacyIndex != null &&
+    if (legacyIndex != null &&
         legacyIndex >= 0 &&
         legacyIndex < visitPreps.length) {
-      prep = visitPreps[legacyIndex];
+      return visitPreps[legacyIndex];
     }
+    return null;
+  }
+
+  String? _prepTitle(Map<String, dynamic>? prep) {
     if (prep == null) return null;
     final title = (prep['title'] as String? ?? '').trim();
     return title.isEmpty ? null : title;
+  }
+
+  List<String> _prepQuestions(Map<String, dynamic>? prep) {
+    if (prep == null) return const [];
+    return (prep['questions'] as List? ?? const [])
+        .whereType<String>()
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
   }
 
   // Save a patient-edited brief summary and regenerate the detailed version

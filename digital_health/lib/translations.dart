@@ -264,6 +264,8 @@ class AppTranslations extends Translations {
       'quiz.history_empty_desc': 'Open a past visit and tap "Test My Knowledge" to create your first quiz.',
       'quiz.not_mentioned_title': 'Not mentioned in your visit',
       'quiz.not_mentioned_desc': 'This question covers general best-practice advice — your doctor did not specifically discuss it during this consultation.',
+      'detail.forgotten_title': 'Questions you forgot to ask',
+      'detail.forgotten_subtitle': 'These questions from your preparation were not addressed during the visit. Consider raising them next time.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Past Visits',
@@ -792,6 +794,8 @@ class AppTranslations extends Translations {
       'quiz.history_empty_desc': 'Öppna ett tidigare besök och tryck "Testa min kunskap" för att skapa ditt första quiz.',
       'quiz.not_mentioned_title': 'Nämndes inte under ditt besök',
       'quiz.not_mentioned_desc': 'Den här frågan handlar om allmänna råd — din läkare diskuterade inte detta specifikt under konsultationen.',
+      'detail.forgotten_title': 'Frågor du glömde att ställa',
+      'detail.forgotten_subtitle': 'De här frågorna från din förberedelse togs inte upp under besöket. Överväg att ställa dem nästa gång.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Tidigare besök',

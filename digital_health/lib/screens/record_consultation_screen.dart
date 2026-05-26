@@ -279,17 +279,24 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       final targetLanguage =
           Get.find<SettingsController>().resolvedLanguageName;
 
-      // Resolve the linked preparation's title (if any) so the AI can use it
-      // as a hint when generating the visit title.
+      // Resolve the linked preparation (if any) so we can pass its title to
+      // the summary prompt AND check whether any prepared questions went
+      // unanswered during the visit.
       final linkedId = _healthController.activeVisitPrepId.value;
       String? prepTitle;
+      List<String> prepQuestions = const [];
       if (linkedId != null) {
         final i = _healthController.visitPreps
             .indexWhere((p) => p['id'] == linkedId);
         if (i != -1) {
-          final t = (_healthController.visitPreps[i]['title'] as String? ?? '')
-              .trim();
+          final prep = _healthController.visitPreps[i];
+          final t = (prep['title'] as String? ?? '').trim();
           if (t.isNotEmpty) prepTitle = t;
+          prepQuestions = (prep['questions'] as List? ?? const [])
+              .whereType<String>()
+              .map((q) => q.trim())
+              .where((q) => q.isNotEmpty)
+              .toList();
         }
       }
 
@@ -301,6 +308,14 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
         preparationTitle: prepTitle,
         targetLanguage: targetLanguage,
       );
+
+      List<String> unanswered = const [];
+      if (prepQuestions.isNotEmpty) {
+        unanswered = await AiService.findUnansweredQuestions(
+          transcript: text,
+          preparedQuestions: prepQuestions,
+        );
+      }
 
       final aiTitle = (result['visit_title'] ?? '').trim();
 
@@ -319,6 +334,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'detailedSummary': result['detailed_personalized'] ?? '',
           'reason': _healthController.visitTitle.value,
           'questions': _healthController.visitQuestions.toList(),
+          'unansweredQuestions': unanswered,
           if (linkedId != null) 'linkedVisitPrepId': linkedId,
         });
 

@@ -256,6 +256,91 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   ],
                 ),
               ),
+
+              // ── Questions the doctor didn't address ──
+              // Shown only when a preparation was linked AND the AI flagged
+              // one or more of its questions as unanswered in the transcript.
+              Builder(builder: (_) {
+                if (linkedPrep == null) return const SizedBox.shrink();
+                final unanswered = (visit['unansweredQuestions'] as List? ??
+                        const [])
+                    .whereType<String>()
+                    .map((q) => q.trim())
+                    .where((q) => q.isNotEmpty)
+                    .toList();
+                if (unanswered.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: const Color(0xFFFECACA), width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                color: Color(0xFFDC2626), size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'detail.forgotten_title'.tr,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF991B1B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'detail.forgotten_subtitle'.tr,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF7F1D1D),
+                              height: 1.45),
+                        ),
+                        const SizedBox(height: 12),
+                        ...unanswered.asMap().entries.map((e) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(
+                                        top: 6, right: 10),
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFDC2626),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      e.value,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          color: Color(0xFF7F1D1D),
+                                          height: 1.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: 25),
 
               // ── AI Summary Card (conditional) ──

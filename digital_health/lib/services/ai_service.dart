@@ -184,6 +184,66 @@ $transcript
     return raw.trim();
   }
 
+  // ── 2c. Detect prepared questions the doctor did not address ─────────────
+  // Given the consultation transcript and the patient's prepared questions
+  // (from a linked preparation form), return the subset of questions that
+  // were either never asked or were asked but received no clear answer.
+  // The returned strings are exact copies of the originals — the caller
+  // filters out anything the AI paraphrased.
+  static Future<List<String>> findUnansweredQuestions({
+    required String transcript,
+    required List<String> preparedQuestions,
+  }) async {
+    final clean = preparedQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    if (clean.isEmpty || transcript.trim().isEmpty) return [];
+
+    final numbered = clean
+        .asMap()
+        .entries
+        .map((e) => '${e.key + 1}. ${e.value}')
+        .join('\n');
+
+    final prompt = '''
+You are reviewing a doctor's consultation to identify which of the patient's prepared questions were NOT addressed.
+
+Return ONLY a valid JSON array of strings — no markdown, no code fences, no explanation.
+Each string must be one of the prepared questions copied EXACTLY (do not paraphrase, do not translate, do not renumber).
+
+Include a question in the array ONLY if BOTH conditions hold:
+1. The question was either never asked during the visit, OR was raised but the doctor gave no clear answer.
+2. You are confident the topic was not addressed. When in doubt, leave it OUT — false positives are worse than false negatives.
+
+If every prepared question was addressed, return an empty array [].
+
+Patient's prepared questions:
+$numbered
+
+Consultation transcript:
+$transcript
+''';
+
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      final asked = clean.toSet();
+      return decoded
+          .whereType<String>()
+          .map((s) => s.trim())
+          .where(asked.contains)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   // ── 3. AI health Q&A ─────────────────────────────────────────────────────
   static Future<String> askAi(String question, Patient? patient) async {
     final patientContext = _buildPatientContext(patient);
