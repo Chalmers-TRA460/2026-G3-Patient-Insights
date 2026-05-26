@@ -40,13 +40,15 @@ class AiService {
   }
 
   // ── 2. Consultation summarisation ────────────────────────────────────────
-  // Transcript + patient profile → dual-level summary (brief + detailed).
-  // Returns a map with keys 'brief_actionable' and 'detailed_personalized'.
+  // Transcript + patient profile → dual-level summary (brief + detailed) plus
+  // a concise visit title. Returns a map with keys 'brief_actionable',
+  // 'detailed_personalized', and 'visit_title'.
   static Future<Map<String, String>> summarizeConsultation(
     String transcript, {
     Patient? patient,
     String reason = '',
     List<String> questions = const [],
+    String? preparationTitle,
     String targetLanguage = 'English',
   }) async {
     final patientContext = _buildPatientContext(patient);
@@ -59,6 +61,9 @@ class AiService {
         'Patient\'s questions:\n${cleanQuestions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}',
     ].join('\n');
 
+    final cleanPrepTitle = preparationTitle?.trim();
+    final hasPrepTitle = cleanPrepTitle != null && cleanPrepTitle.isNotEmpty;
+
     final prompt = '''
 You are a medical transcription assistant. Summarise ONLY what was explicitly said in the consultation transcript below.
 
@@ -69,12 +74,19 @@ STRICT ANTI-HALLUCINATION RULES (mandatory — violations are harmful):
 - If a topic was not discussed during the consultation, write "Not discussed." — do not fill the gap.
 - Use the patient profile only to correctly interpret names/terms already in the transcript, never to add new facts.
 
-Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these two keys:
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these three keys:
 
 {
+  "visit_title": "...",
   "brief_actionable": "...",
   "detailed_personalized": "..."
 }
+
+visit_title: A concise, patient-friendly, descriptive title for this visit in $targetLanguage.
+- Maximum 4–5 words. No trailing punctuation. Use sentence case (capitalise only the first word and proper nouns).
+- Describe the main reason for the visit or its primary outcome (e.g. "Annual checkup", "Back pain follow-up", "Migraine medication review").
+- Do NOT include the patient's name, the date, or generic words like "Consultation" or "Visit" on their own.
+- If a linked preparation name is provided below, take it into consideration when formulating the title — the title may build on or refine the preparation name, but should still reflect what actually happened in the transcript.
 
 brief_actionable: A bullet list using • bullets. Include ONLY items explicitly stated in the transcript:
 - Medications: only new, changed, or stopped medications with the exact dose the doctor stated.
@@ -95,7 +107,7 @@ Formatting rules:
 - Translate headings into $targetLanguage but keep the 1.–4. numbering and ** markers.
 
 $patientContext
-${preVisit.isNotEmpty ? 'Pre-visit notes (patient\'s own words — do not treat as medical facts):\n$preVisit\n' : ''}
+${hasPrepTitle ? 'Linked preparation name (consider this when formulating the visit_title):\n$cleanPrepTitle\n' : ''}${preVisit.isNotEmpty ? 'Pre-visit notes (patient\'s own words — do not treat as medical facts):\n$preVisit\n' : ''}
 Consultation transcript (the only source of truth):
 $transcript
 ''';
@@ -109,11 +121,16 @@ $transcript
           .trim();
       final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
       return {
+        'visit_title': (decoded['visit_title'] as String? ?? '').trim(),
         'brief_actionable': (decoded['brief_actionable'] as String? ?? '').trim(),
         'detailed_personalized': (decoded['detailed_personalized'] as String? ?? '').trim(),
       };
     } catch (_) {
-      return {'brief_actionable': '', 'detailed_personalized': raw.trim()};
+      return {
+        'visit_title': '',
+        'brief_actionable': '',
+        'detailed_personalized': raw.trim(),
+      };
     }
   }
 

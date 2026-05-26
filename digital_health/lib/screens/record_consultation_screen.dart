@@ -278,23 +278,40 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     try {
       final targetLanguage =
           Get.find<SettingsController>().resolvedLanguageName;
+
+      // Resolve the linked preparation's title (if any) so the AI can use it
+      // as a hint when generating the visit title.
+      final linkedId = _healthController.activeVisitPrepId.value;
+      String? prepTitle;
+      if (linkedId != null) {
+        final i = _healthController.visitPreps
+            .indexWhere((p) => p['id'] == linkedId);
+        if (i != -1) {
+          final t = (_healthController.visitPreps[i]['title'] as String? ?? '')
+              .trim();
+          if (t.isNotEmpty) prepTitle = t;
+        }
+      }
+
       final result = await AiService.summarizeConsultation(
         text,
         patient: _healthController.patient.value,
         reason: _healthController.visitTitle.value,
         questions: _healthController.visitQuestions.toList(),
+        preparationTitle: prepTitle,
         targetLanguage: targetLanguage,
       );
 
+      final aiTitle = (result['visit_title'] ?? '').trim();
+
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final linkedId = _healthController.activeVisitPrepId.value;
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('consultations')
             .add({
-          'doctorName': 'record.doctor'.tr,
+          'doctorName': aiTitle.isNotEmpty ? aiTitle : 'record.doctor'.tr,
           'date': DateTime.now().toIso8601String().split('T')[0],
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': text,

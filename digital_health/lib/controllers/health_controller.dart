@@ -178,7 +178,8 @@ class HealthController extends GetxController {
   }
 
   Future<void> generateSummaryForVisit(int index) async {
-    final transcript = consultations[index]['transcript'] as String? ?? '';
+    final visit = consultations[index];
+    final transcript = visit['transcript'] as String? ?? '';
     if (transcript.isEmpty) return;
     isSummarizingVisit.value = true;
     try {
@@ -187,17 +188,48 @@ class HealthController extends GetxController {
       final result = await AiService.summarizeConsultation(
         transcript,
         patient: patient.value,
+        preparationTitle: _linkedPrepTitleForVisit(visit),
         targetLanguage: targetLanguage,
       );
+      final aiTitle = (result['visit_title'] ?? '').trim();
+      final existingTitle = (visit['doctorName'] as String? ?? '').trim();
+      final defaultTitle = 'record.doctor'.tr;
       await updateConsultation(index, {
         'briefSummary': result['brief_actionable'] ?? '',
         'detailedSummary': result['detailed_personalized'] ?? '',
+        // Only overwrite the title if the AI produced one AND the user hasn't
+        // already given the visit a custom title (anything other than the
+        // default placeholder).
+        if (aiTitle.isNotEmpty &&
+            (existingTitle.isEmpty || existingTitle == defaultTitle))
+          'doctorName': aiTitle,
       });
     } catch (e) {
       Get.snackbar('snackbar.error'.tr, 'Failed to generate summary: $e');
     } finally {
       isSummarizingVisit.value = false;
     }
+  }
+
+  // Resolve the linked preparation title for a visit, by id or legacy index.
+  // Returns null if nothing is linked or the title is empty.
+  String? _linkedPrepTitleForVisit(Map<String, dynamic> visit) {
+    final linkedId = visit['linkedVisitPrepId'] as String?;
+    final legacyIndex = visit['linkedVisitPrepIndex'] as int?;
+    Map<String, dynamic>? prep;
+    if (linkedId != null) {
+      final i = visitPreps.indexWhere((p) => p['id'] == linkedId);
+      if (i != -1) prep = visitPreps[i];
+    }
+    if (prep == null &&
+        legacyIndex != null &&
+        legacyIndex >= 0 &&
+        legacyIndex < visitPreps.length) {
+      prep = visitPreps[legacyIndex];
+    }
+    if (prep == null) return null;
+    final title = (prep['title'] as String? ?? '').trim();
+    return title.isEmpty ? null : title;
   }
 
   // Save a patient-edited brief summary and regenerate the detailed version

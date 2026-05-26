@@ -311,8 +311,8 @@ class AppTranslations extends Translations {
       // ── Edit consultation ────────────────────────────────────────────────
       'edit_consult.title': 'Edit Visit',
       'edit_consult.save': 'Save Changes',
-      'edit_consult.doctor': 'Doctor Name',
-      'edit_consult.doctor_hint': 'e.g. Dr. Smith',
+      'edit_consult.doctor': 'Visit Title',
+      'edit_consult.doctor_hint': 'e.g. Annual checkup with Dr. Smith',
       'edit_consult.transcript': 'Transcript',
       'edit_consult.transcript_hint': 'Enter the full consultation transcript…',
       'edit_consult.brief_hint': 'Key takeaways, medication changes, next steps…',
@@ -839,8 +839,8 @@ class AppTranslations extends Translations {
       // ── Edit consultation ────────────────────────────────────────────────
       'edit_consult.title': 'Redigera besök',
       'edit_consult.save': 'Spara ändringar',
-      'edit_consult.doctor': 'Läkarnamn',
-      'edit_consult.doctor_hint': 't.ex. Dr. Svensson',
+      'edit_consult.doctor': 'Besökstitel',
+      'edit_consult.doctor_hint': 't.ex. Årlig kontroll hos Dr. Svensson',
       'edit_consult.transcript': 'Transkript',
       'edit_consult.transcript_hint': 'Ange hela konsultationstranskriptet…',
       'edit_consult.brief_hint': 'Viktiga punkter, medicineringsändringar, nästa steg…',
