@@ -43,6 +43,26 @@ class HealthController extends GetxController {
   RxString visitPrepSummary = ''.obs;
   RxBool isGeneratingSummary = false.obs;
 
+  // Id of the prep currently being recorded against, so we can archive it
+  // after the recording is saved. Null if the recording isn't tied to a prep.
+  RxnString activeVisitPrepId = RxnString();
+
+  // Filtered views over visitPreps. Each entry retains its original index in
+  // the full list via a paired tuple so callers can still mutate by index.
+  List<MapEntry<int, Map<String, dynamic>>> get activeVisitPrepsIndexed =>
+      visitPreps
+          .asMap()
+          .entries
+          .where((e) => e.value['archived'] != true)
+          .toList();
+
+  List<MapEntry<int, Map<String, dynamic>>> get archivedVisitPrepsIndexed =>
+      visitPreps
+          .asMap()
+          .entries
+          .where((e) => e.value['archived'] == true)
+          .toList();
+
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
   StreamSubscription<User?>? _authSub;
@@ -134,7 +154,10 @@ class HealthController extends GetxController {
     }
   }
 
-  Future<void> saveConsultationTranscript(String transcript) async {
+  Future<void> saveConsultationTranscript(
+    String transcript, {
+    String? linkedVisitPrepId,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) return;
     await _firestore
@@ -147,6 +170,7 @@ class HealthController extends GetxController {
       'timestamp': FieldValue.serverTimestamp(),
       'transcript': transcript,
       'summary': '',
+      if (linkedVisitPrepId != null) 'linkedVisitPrepId': linkedVisitPrepId,
     });
     await fetchConsultations();
   }
@@ -589,6 +613,67 @@ class HealthController extends GetxController {
     visitTitle.value = '';
     visitQuestions.clear();
     visitPrepSummary.value = '';
+    activeVisitPrepId.value = null;
+  }
+
+  // Loads a prep's title/questions into the record-screen reactive state and
+  // remembers its id so the prep can be archived once recording is saved.
+  void activateVisitPrep(Map<String, dynamic> prep) {
+    activeVisitPrepId.value = prep['id'] as String?;
+    visitTitle.value = (prep['title'] as String? ?? '').trim();
+    visitQuestions.assignAll(
+      List<String>.from(prep['questions'] ?? const [])
+          .map((q) => q.trim())
+          .where((q) => q.isNotEmpty)
+          .toList(),
+    );
+  }
+
+  // Marks the prep referenced by activeVisitPrepId as archived. Safe to call
+  // when no prep is active (no-op). Called from the record screen after a
+  // recording is successfully saved.
+  Future<void> archiveActiveVisitPrep() async {
+    final id = activeVisitPrepId.value;
+    activeVisitPrepId.value = null;
+    if (id == null) return;
+    final idx = visitPreps.indexWhere((p) => p['id'] == id);
+    if (idx == -1) return;
+
+    final updated = List<Map<String, dynamic>>.from(
+        visitPreps.map((e) => Map<String, dynamic>.from(e)));
+    updated[idx]['archived'] = true;
+    visitPreps.value = updated;
+
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set({'visitPreps': updated}, SetOptions(merge: true));
+    } catch (e) {
+      print('archiveActiveVisitPrep error: $e');
+    }
+  }
+
+  // Moves an archived prep back into the active list.
+  Future<void> restoreVisitPrep(int index) async {
+    if (index < 0 || index >= visitPreps.length) return;
+    final updated = List<Map<String, dynamic>>.from(
+        visitPreps.map((e) => Map<String, dynamic>.from(e)));
+    updated[index]['archived'] = false;
+    visitPreps.value = updated;
+
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set({'visitPreps': updated}, SetOptions(merge: true));
+    } catch (e) {
+      print('restoreVisitPrep error: $e');
+    }
   }
 
   // ── Visit prep – load / save ──────────────────────────────────────────────────
@@ -600,9 +685,29 @@ class HealthController extends GetxController {
       final doc = await _firestore.collection('users').doc(uid).get();
       final raw = doc.data()?['visitPreps'];
       if (raw != null) {
-        visitPreps.value = List<Map<String, dynamic>>.from(raw);
+        final list = List<Map<String, dynamic>>.from(
+            (raw as List).map((e) => Map<String, dynamic>.from(e)));
+
+        // Backfill ids for legacy entries so they can be archived/restored.
+        bool mutated = false;
+        final baseTs = DateTime.now().microsecondsSinceEpoch;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i]['id'] == null || (list[i]['id'] as String).isEmpty) {
+            list[i]['id'] = 'legacy-${baseTs + i}';
+            mutated = true;
+          }
+        }
+        visitPreps.value = list;
         visitPrepSummary.value =
-            visitPreps.isNotEmpty ? (visitPreps.first['summary'] ?? '') : '';
+            list.isNotEmpty ? (list.first['summary'] ?? '') : '';
+
+        if (mutated && !isViewingOther) {
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .set({'visitPreps': list}, SetOptions(merge: true))
+              .catchError((e) => print('visitPrep id backfill failed: $e'));
+        }
       } else {
         visitPreps.clear();
         visitPrepSummary.value = '';
@@ -675,14 +780,19 @@ class HealthController extends GetxController {
     try {
       final fhirResponse = _buildFhirResponseJson(user.uid);
 
+      final existing = editIndex != null ? visitPreps[editIndex] : null;
       final entry = <String, dynamic>{
+        'id': existing?['id'] ??
+            'prep-${DateTime.now().microsecondsSinceEpoch}',
         'title': visitTitle.value.trim(),
-        'date': editIndex != null
-            ? visitPreps[editIndex]['date']
+        'date': existing != null
+            ? existing['date']
             : DateTime.now().toIso8601String().split('T')[0],
         'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
         'summary': '',
+        // Preserve archived state on edit (default false for new entries).
+        'archived': existing?['archived'] ?? false,
       };
 
       final updated = List<Map<String, dynamic>>.from(

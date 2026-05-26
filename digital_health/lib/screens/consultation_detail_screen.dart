@@ -65,11 +65,23 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
             ? c.consultations[widget.index]
             : widget.consultation;
 
-        final linkedPrepIndex = visit['linkedVisitPrepIndex'] as int?;
-        final linkedPrep = (linkedPrepIndex != null &&
-                linkedPrepIndex < c.visitPreps.length)
-            ? c.visitPreps[linkedPrepIndex]
+        // Resolve linked prep by id (preferred) or legacy index. Both lookups
+        // search the full visitPreps list so an auto-archived prep is still
+        // visible on its consultation.
+        final linkedPrepId = visit['linkedVisitPrepId'] as String?;
+        final legacyPrepIndex = visit['linkedVisitPrepIndex'] as int?;
+        int? resolvedPrepIndex;
+        if (linkedPrepId != null) {
+          final i =
+              c.visitPreps.indexWhere((p) => p['id'] == linkedPrepId);
+          if (i != -1) resolvedPrepIndex = i;
+        }
+        resolvedPrepIndex ??= (legacyPrepIndex != null &&
+                legacyPrepIndex < c.visitPreps.length)
+            ? legacyPrepIndex
             : null;
+        final linkedPrep =
+            resolvedPrepIndex != null ? c.visitPreps[resolvedPrepIndex] : null;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -169,7 +181,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                         const SizedBox(width: 8),
                                         OutlinedButton.icon(
                                           onPressed: () => _pickVisitPrep(
-                                              context, c, linkedPrepIndex),
+                                              context, c, resolvedPrepIndex),
                                           icon: const Icon(
                                               Icons.swap_horiz_rounded,
                                               size: 16),
@@ -212,7 +224,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                                   ] else ...[
                                     OutlinedButton.icon(
                                       onPressed: () => _pickVisitPrep(
-                                          context, c, linkedPrepIndex),
+                                          context, c, resolvedPrepIndex),
                                       icon: const Icon(
                                           Icons.add_circle_outline_rounded,
                                           size: 18),
@@ -805,8 +817,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                           color: Theme.of(context).primaryColor)
                       : null,
                   onTap: () {
-                    c.updateConsultation(
-                        widget.index, {'linkedVisitPrepIndex': i});
+                    c.updateConsultation(widget.index, {
+                      'linkedVisitPrepId': prep['id'],
+                      'linkedVisitPrepIndex': null,
+                    });
                     Get.back();
                   },
                 );
@@ -816,8 +830,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
           if (current != null)
             TextButton(
               onPressed: () {
-                c.updateConsultation(
-                    widget.index, {'linkedVisitPrepIndex': null});
+                c.updateConsultation(widget.index, {
+                  'linkedVisitPrepId': null,
+                  'linkedVisitPrepIndex': null,
+                });
                 Get.back();
               },
               child: const Text('Remove this preparation',

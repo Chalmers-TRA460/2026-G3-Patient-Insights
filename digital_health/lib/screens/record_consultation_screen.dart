@@ -215,7 +215,12 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     }
     setState(() => _stage = _Stage.summarizing);
     try {
-      await _healthController.saveConsultationTranscript(text);
+      final linkedId = _healthController.activeVisitPrepId.value;
+      await _healthController.saveConsultationTranscript(
+        text,
+        linkedVisitPrepId: linkedId,
+      );
+      await _healthController.archiveActiveVisitPrep();
       _healthController.clearVisitNotes();
       Get.off(() => const ConsultationHistoryScreen());
     } catch (e) {
@@ -248,6 +253,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        final linkedId = _healthController.activeVisitPrepId.value;
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -261,9 +267,11 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'detailedSummary': result['detailed_personalized'] ?? '',
           'reason': _healthController.visitTitle.value,
           'questions': _healthController.visitQuestions.toList(),
+          if (linkedId != null) 'linkedVisitPrepId': linkedId,
         });
 
         await _healthController.fetchConsultations();
+        await _healthController.archiveActiveVisitPrep();
         _healthController.clearVisitNotes();
       }
 

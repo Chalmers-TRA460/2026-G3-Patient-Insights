@@ -184,6 +184,7 @@ class AppTranslations extends Translations {
       'summary.reason': 'Reason for your visit',
       'summary.questions': 'Your questions',
       'summary.no_questions': 'No questions added.',
+      'summary.start_recording': 'Start recording visit',
 
       // ── Visit prep history ───────────────────────────────────────────────
       'history.title': 'Visit preparations',
@@ -196,6 +197,15 @@ class AppTranslations extends Translations {
       'history.cancel': 'Cancel',
       'history.delete': 'Delete',
       'history.edit': 'Edit',
+      'history.record': 'Record visit',
+      'history.archive_tooltip': 'Archive (@count)',
+
+      // ── Visit prep archive ───────────────────────────────────────────────
+      'archive.title': 'Archived preparations',
+      'archive.empty': 'No archived preparations',
+      'archive.empty_desc':
+          'Preparations move here automatically after you record the visit.',
+      'archive.restore': 'Move back to active',
 
       // ── Record consultation ──────────────────────────────────────────────
       'record.title': 'Record Visit',
@@ -687,6 +697,7 @@ class AppTranslations extends Translations {
       'summary.reason': 'Anledning till ditt besök',
       'summary.questions': 'Dina frågor',
       'summary.no_questions': 'Inga frågor tillagda.',
+      'summary.start_recording': 'Börja spela in besök',
 
       // ── Visit prep history ───────────────────────────────────────────────
       'history.title': 'Besöksförberedelser',
@@ -699,6 +710,15 @@ class AppTranslations extends Translations {
       'history.cancel': 'Avbryt',
       'history.delete': 'Ta bort',
       'history.edit': 'Redigera',
+      'history.record': 'Spela in besök',
+      'history.archive_tooltip': 'Arkiv (@count)',
+
+      // ── Visit prep archive ───────────────────────────────────────────────
+      'archive.title': 'Arkiverade förberedelser',
+      'archive.empty': 'Inga arkiverade förberedelser',
+      'archive.empty_desc':
+          'Förberedelser flyttas hit automatiskt efter att du spelat in besöket.',
+      'archive.restore': 'Flytta tillbaka till aktiva',
 
       // ── Record consultation ──────────────────────────────────────────────
       'record.title': 'Spela in besök',
