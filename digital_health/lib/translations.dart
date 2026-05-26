@@ -139,6 +139,10 @@ class AppTranslations extends Translations {
       'prep.btn.remove_question': 'Remove',
       'prep.error.no_reason': 'Please write a short reason for your visit.',
 
+      // ── Appointment setup ─────────────────────────────────────────────────
+      'appt.step1': 'Set date & time',
+      'appt.error.no_date': 'Please select a date for your appointment.',
+
       // ── Visit taxonomy – categories ──────────────────────────────────────
       'visit.cat.pain': 'Pain or discomfort',
       'visit.cat.fever': 'Fever or chills',
@@ -173,7 +177,7 @@ class AppTranslations extends Translations {
 
       // ── Visit prep summary ───────────────────────────────────────────────
       'summary.title': 'Visit preparation',
-      'summary.what_told': 'What you told us',
+      'summary.what_told': 'Questions to Remember for Your Meeting',
       'summary.ai_summary': 'AI summary',
       'summary.back_home': 'Back to Home',
       'summary.how_long': 'How long',
@@ -642,6 +646,10 @@ class AppTranslations extends Translations {
       'prep.btn.remove_question': 'Ta bort',
       'prep.error.no_reason': 'Skriv en kort anledning till ditt besök.',
 
+      // ── Appointment setup ─────────────────────────────────────────────────
+      'appt.step1': 'Ange datum & tid',
+      'appt.error.no_date': 'Välj ett datum för ditt besök.',
+
       // ── Visit taxonomy – categories ──────────────────────────────────────
       'visit.cat.pain': 'Smärta eller obehag',
       'visit.cat.fever': 'Feber eller frossa',
@@ -676,7 +684,7 @@ class AppTranslations extends Translations {
 
       // ── Visit prep summary ───────────────────────────────────────────────
       'summary.title': 'Besöksförberedelse',
-      'summary.what_told': 'Vad du berättade för oss',
+      'summary.what_told': 'Frågor att komma ihåg till ditt möte',
       'summary.ai_summary': 'AI-sammanfattning',
       'summary.back_home': 'Tillbaka till startsidan',
       'summary.how_long': 'Hur länge',

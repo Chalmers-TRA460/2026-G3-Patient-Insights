@@ -38,6 +38,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
 
   Timer? _timer;
   int _recordSeconds = 0;
+  bool _isPaused = false;
 
   @override
   void dispose() {
@@ -130,8 +131,23 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     });
   }
 
+  Future<void> _pauseRecording() async {
+    await _recorder.pause();
+    _timer?.cancel();
+    setState(() => _isPaused = true);
+  }
+
+  Future<void> _resumeRecording() async {
+    await _recorder.resume();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _recordSeconds++);
+    });
+    setState(() => _isPaused = false);
+  }
+
   Future<void> _stopRecording() async {
     _timer?.cancel();
+    _isPaused = false;
     final result = await _recorder.stop();
     setState(() => _stage = _Stage.transcribing);
 
@@ -358,12 +374,20 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Record Consultation')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: _buildBody(),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Record Consultation',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1E293B),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
       ),
+      body: _buildBody(),
     );
   }
 
@@ -374,224 +398,542 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
       case _Stage.recording:
         return _buildRecording();
       case _Stage.transcribing:
-        return _buildSpinner('Transcribing with Whisper…');
+        return _buildSpinner(
+          icon: Icons.graphic_eq_rounded,
+          iconColor: const Color(0xFF6366F1),
+          title: 'Transcribing Audio…',
+          subtitle: 'Whisper AI is converting your recording to text',
+        );
       case _Stage.transcribed:
         return _buildTranscribed();
       case _Stage.summarizing:
-        return _buildSpinner('AI is summarising your visit…');
+        return _buildSpinner(
+          icon: Icons.auto_awesome_rounded,
+          iconColor: Colors.green,
+          title: 'Generating Summary…',
+          subtitle: 'AI is creating a personalised summary of your visit',
+        );
     }
   }
 
-  // idle ─────────────────────────────────────────────────────────────────────
+  // ── idle ──────────────────────────────────────────────────────────────────
   Widget _buildIdle() {
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Icon(Icons.mic_none_rounded, size: 80, color: Colors.blueGrey),
-            const SizedBox(height: 24),
-            const Text('Tap to start recording',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              'Record your consultation, then Whisper will transcribe it\nand the AI will summarise it for you.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: Colors.grey),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Page header
+          const Text('Start Recording',
+              style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B))),
+          const SizedBox(height: 6),
+          const Text(
+            'Record your consultation and get an AI-generated summary.',
+            style: TextStyle(fontSize: 15, color: Color(0xFF64748B), height: 1.4),
+          ),
+          const SizedBox(height: 28),
+
+          // Privacy notice card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
             ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.privacy_tip_rounded,
+                    size: 20, color: Color(0xFF1D4ED8)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Privacy Notice',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1D4ED8))),
+                      const SizedBox(height: 4),
+                      Text(
+                        'record.consent_reminder'.tr,
+                        style: const TextStyle(
+                            fontSize: 13.5,
+                            color: Color(0xFF1D4ED8),
+                            height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _buildQuestionsPanel(),
+
+          if (_errorMessage.isNotEmpty) ...[
             const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: Colors.red.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.privacy_tip_rounded,
-                      size: 18, color: Color(0xFF1D4ED8)),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'record.consent_reminder'.tr,
-                      style: const TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFF1D4ED8),
-                          fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _buildQuestionsPanel(),
-            if (_errorMessage.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Text(_errorMessage,
-                  style: const TextStyle(color: Colors.red, fontSize: 14),
-                  textAlign: TextAlign.center),
-            ],
-            const SizedBox(height: 40),
-            FloatingActionButton.large(
-              heroTag: 'start',
-              onPressed: _startRecording,
-              backgroundColor: Colors.blue,
-              child: const Icon(Icons.mic, color: Colors.white, size: 36),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // recording ────────────────────────────────────────────────────────────────
-  Widget _buildRecording() {
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.red.withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: const BoxDecoration(
-                        color: Colors.red, shape: BoxShape.circle),
-                  ),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 18),
                   const SizedBox(width: 10),
-                  const Text('RECORDING',
-                      style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5)),
+                  Expanded(
+                    child: Text(_errorMessage,
+                        style:
+                            const TextStyle(color: Colors.red, fontSize: 14)),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(_timerLabel,
-                style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Speak naturally — recording continuously',
-                style: TextStyle(fontSize: 15, color: Colors.grey)),
-            _buildQuestionsPanel(),
-            const SizedBox(height: 32),
-            FloatingActionButton.large(
-              heroTag: 'stop',
-              onPressed: _stopRecording,
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.stop_rounded, color: Colors.white, size: 36),
-            ),
-            const SizedBox(height: 16),
-            const Text('Tap to stop',
-                style: TextStyle(fontSize: 14, color: Colors.grey)),
           ],
-        ),
-      ),
-    );
-  }
 
-  // spinner ──────────────────────────────────────────────────────────────────
-  Widget _buildSpinner(String label) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 40),
+          Center(
+            child: Column(
+              children: [
+                FloatingActionButton.large(
+                  heroTag: 'start',
+                  onPressed: _startRecording,
+                  backgroundColor: const Color(0xFF0066CC),
+                  elevation: 4,
+                  child:
+                      const Icon(Icons.mic, color: Colors.white, size: 38),
+                ),
+                const SizedBox(height: 12),
+                const Text('Tap to start recording',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569))),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // transcribed ──────────────────────────────────────────────────────────────
+  // ── recording ─────────────────────────────────────────────────────────────
+  Widget _buildRecording() {
+    final isPaused = _isPaused;
+    final badgeColor = isPaused ? Colors.orange : Colors.red;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Status badge
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: badgeColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: badgeColor.withOpacity(0.35)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                      color: badgeColor, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isPaused ? 'PAUSED' : 'RECORDING',
+                  style: TextStyle(
+                      color: badgeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      letterSpacing: 1.8),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // Timer
+          Text(_timerLabel,
+              style: const TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                  letterSpacing: 2)),
+          const SizedBox(height: 8),
+          Text(
+            isPaused
+                ? 'Recording paused — tap Resume to continue'
+                : 'Speak naturally — recording in progress',
+            style: const TextStyle(
+                fontSize: 14, color: Color(0xFF94A3B8)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          if (!isPaused)
+            const Text(
+              'Your voice is being captured. You can pause at any time.',
+              style: TextStyle(fontSize: 13, color: Color(0xFFCBD5E1)),
+              textAlign: TextAlign.center,
+            ),
+
+          _buildQuestionsPanel(),
+          const SizedBox(height: 36),
+
+          // Controls row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Pause / Resume
+              _buildRecordButton(
+                heroTag: 'pause_resume',
+                onPressed: isPaused ? _resumeRecording : _pauseRecording,
+                backgroundColor:
+                    isPaused ? const Color(0xFF16A34A) : Colors.orange,
+                icon: isPaused
+                    ? Icons.play_arrow_rounded
+                    : Icons.pause_rounded,
+                label: isPaused ? 'Resume' : 'Pause',
+                size: 64,
+                iconSize: 30,
+              ),
+              const SizedBox(width: 44),
+              // Stop — larger, centred visually
+              _buildRecordButton(
+                heroTag: 'stop',
+                onPressed: _stopRecording,
+                backgroundColor: Colors.red,
+                icon: Icons.stop_rounded,
+                label: 'Stop & Process',
+                size: 76,
+                iconSize: 36,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Tap Stop to finish and transcribe your recording',
+            style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordButton({
+    required String heroTag,
+    required VoidCallback onPressed,
+    required Color backgroundColor,
+    required IconData icon,
+    required String label,
+    required double size,
+    required double iconSize,
+  }) {
+    return Column(
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: FloatingActionButton(
+            heroTag: heroTag,
+            onPressed: onPressed,
+            backgroundColor: backgroundColor,
+            elevation: 3,
+            shape: const CircleBorder(),
+            child: Icon(icon, color: Colors.white, size: iconSize),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF64748B))),
+      ],
+    );
+  }
+
+  // ── spinner ───────────────────────────────────────────────────────────────
+  Widget _buildSpinner({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 38),
+            ),
+            const SizedBox(height: 24),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B))),
+            const SizedBox(height: 8),
+            Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 14, color: Color(0xFF94A3B8), height: 1.4),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── transcribed ───────────────────────────────────────────────────────────
   Widget _buildTranscribed() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.green, size: 22),
-            const SizedBox(width: 8),
-            const Text('Transcript ready',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Spacer(),
-            TextButton(
-              onPressed: () => setState(() => _stage = _Stage.idle),
-              child: const Text('Re-record'),
+        // ── Success header banner ──────────────────────────────────────────
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0FDF4),
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFBBF7D0)),
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        const Text('Review and edit if needed, then tap Summarise.',
-            style: TextStyle(fontSize: 13, color: Colors.grey)),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-            ),
-            child: TextField(
-              controller: _transcriptController,
-              maxLines: null,
-              expands: true,
-              style: const TextStyle(fontSize: 16, height: 1.6),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Transcript will appear here…',
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF16A34A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 26),
               ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Recording Complete',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF15803D))),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Your consultation has been transcribed successfully.',
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF16A34A),
+                          height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => setState(() => _stage = _Stage.idle),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF64748B),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Re-record',
+                    style: TextStyle(fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Transcript section ─────────────────────────────────────────────
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.subject_rounded,
+                          size: 18, color: Color(0xFF475569)),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text('Your Transcript',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B))),
+                    const Spacer(),
+                    const Text('Tap to edit',
+                        style: TextStyle(
+                            fontSize: 12, color: Color(0xFF94A3B8))),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border:
+                          Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _transcriptController,
+                      maxLines: null,
+                      expands: true,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.65,
+                          color: Color(0xFF334155)),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Transcript will appear here…',
+                        hintStyle:
+                            TextStyle(color: Color(0xFFCBD5E1)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.auto_awesome_rounded),
-            label: Text('record.btn.summarize'.tr,
-                style: const TextStyle(fontSize: 18)),
-            onPressed: _summarize,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+
+        // ── Action buttons ─────────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+                top: BorderSide(color: Color(0xFFE2E8F0))),
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.save_alt_rounded),
-            label: Text('record.btn.save_transcript'.tr,
-                style: const TextStyle(fontSize: 16)),
-            onPressed: _saveTranscript,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blueGrey,
-              side: const BorderSide(color: Colors.blueGrey),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('What would you like to do?',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.3)),
+              const SizedBox(height: 12),
+
+              // Primary: AI Summarize
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+                  label: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('record.btn.summarize'.tr,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Get a structured AI summary of your visit',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.normal,
+                            color: Color(0xFFBBF7D0)),
+                      ),
+                    ],
+                  ),
+                  onPressed: _summarize,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    alignment: Alignment.centerLeft,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Secondary: Save transcript only
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.save_alt_rounded, size: 20),
+                  label: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('record.btn.save_transcript'.tr,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Save the raw transcript without a summary',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.normal),
+                      ),
+                    ],
+                  ),
+                  onPressed: _saveTranscript,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF475569),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    alignment: Alignment.centerLeft,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

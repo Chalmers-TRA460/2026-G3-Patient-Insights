@@ -42,6 +42,8 @@ class HealthController extends GetxController {
   RxList<String> visitQuestions = <String>[].obs;
   RxString visitPrepSummary = ''.obs;
   RxBool isGeneratingSummary = false.obs;
+  RxString appointmentDate = ''.obs;
+  RxString appointmentTime = ''.obs;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -589,6 +591,8 @@ class HealthController extends GetxController {
     visitTitle.value = '';
     visitQuestions.clear();
     visitPrepSummary.value = '';
+    appointmentDate.value = '';
+    appointmentTime.value = '';
   }
 
   // ── Visit prep – load / save ──────────────────────────────────────────────────
@@ -679,7 +683,12 @@ class HealthController extends GetxController {
         'title': visitTitle.value.trim(),
         'date': editIndex != null
             ? visitPreps[editIndex]['date']
-            : DateTime.now().toIso8601String().split('T')[0],
+            : (appointmentDate.value.isNotEmpty
+                ? appointmentDate.value
+                : DateTime.now().toIso8601String().split('T')[0]),
+        'time': editIndex != null
+            ? (visitPreps[editIndex]['time'] ?? '')
+            : appointmentTime.value,
         'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
         'summary': '',

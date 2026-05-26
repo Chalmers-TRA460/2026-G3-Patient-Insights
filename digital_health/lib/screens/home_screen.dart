@@ -5,7 +5,7 @@ import '../controllers/settings_controller.dart';
 import '../widgets/accessible_audio_card.dart';
 import 'nutrition_screen.dart';
 import 'ai_chat_screen.dart';
-import 'prepare_visit_screen.dart';
+import 'appointment_setup_screen.dart';
 import 'record_consultation_screen.dart';
 import 'visit_prep_history_screen.dart';
 import 'quiz_history_screen.dart';
@@ -119,9 +119,7 @@ class HomeScreen extends StatelessWidget {
                         'home.action.prepare',
                         Colors.blue.shade50,
                         Colors.blue.shade800,
-                        () => controller.visitPreps.isNotEmpty
-                            ? Get.to(() => const VisitPrepHistoryScreen())
-                            : Get.to(() => const PrepareVisitScreen()),
+                        () => Get.to(() => const AppointmentSetupScreen()),
                       ),
                       card(
                         Icons.mic_rounded,

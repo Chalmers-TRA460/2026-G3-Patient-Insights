@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/questionnaire_model.dart';
+import 'record_consultation_screen.dart';
 
 class VisitPrepSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -10,58 +11,186 @@ class VisitPrepSummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = data['title'] as String? ?? '';
     final date = data['date'] as String? ?? '';
-    final summary = data['summary'] as String? ?? '';
+    final time = data['time'] as String? ?? '';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-          title: Text(title.isNotEmpty ? title : 'summary.title'.tr)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (date.isNotEmpty) ...[
-              Text(date,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500])),
-              const SizedBox(height: 20),
-            ],
+        title: Text(
+          title.isNotEmpty ? title : 'summary.title'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1E293B),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Step 3 badge + appointment info ────────────────────
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Step 3 of 3',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Ready to go!',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
 
-            Text('summary.what_told'.tr,
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+                  if (date.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.event_rounded,
+                              size: 16, color: Color(0xFF1D4ED8)),
+                          const SizedBox(width: 8),
+                          Text(
+                            time.isNotEmpty ? '$date · $time' : date,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF1D4ED8),
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
-            ..._buildBodyRows(data),
+                  const SizedBox(height: 24),
 
-            const SizedBox(height: 28),
-            const Divider(),
-            const SizedBox(height: 20),
+                  // ── Questions header ───────────────────────────────────
+                  const Text('Questions to Remember for Your Meeting',
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Read these out during your visit so you don\'t forget anything.',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF64748B),
+                        height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
 
-            Row(
+                  ..._buildBodyRows(data),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Next Step: Record ──────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    color: Color(0xFF4338CA), size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('summary.ai_summary'.tr,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.mic_rounded,
+                          color: Colors.red.shade600, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text('Next Step: Record Your Visit',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B))),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'When you\'re at the doctor, start the recording so your visit can be summarised by AI.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                      height: 1.4),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.mic_rounded, size: 20),
+                    label: const Text('Start Recording Now',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: () => Get.to(
+                        () => const RecordConsultationScreen()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () =>
+                        Get.until((route) => route.isFirst),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF64748B),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text('summary.back_home'.tr,
+                        style: const TextStyle(fontSize: 14)),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            _summaryText(summary),
-
-            const SizedBox(height: 36),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Get.until((route) => route.isFirst),
-                child: Text('summary.back_home'.tr),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -84,34 +213,42 @@ class VisitPrepSummaryScreen extends StatelessWidget {
 
     return [
       if (title.isNotEmpty) _buildRow('summary.reason'.tr, title),
-      const SizedBox(height: 6),
+      const SizedBox(height: 10),
       Text('summary.questions'.tr,
           style: TextStyle(
-              fontSize: 13,
+              fontSize: 17,
               fontWeight: FontWeight.w600,
               color: Colors.grey[600])),
-      const SizedBox(height: 6),
+      const SizedBox(height: 10),
       if (questions.isEmpty)
         Text('summary.no_questions'.tr,
             style: TextStyle(
-                fontSize: 15, color: Colors.grey[500], height: 1.4))
+                fontSize: 18, color: Colors.grey[500], height: 1.4))
       else
         ...List.generate(questions.length, (i) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.only(bottom: 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 24,
-                  child: Text('${i + 1}.',
+                Container(
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(top: 2, right: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0066CC).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('${i + 1}',
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0066CC))),
                 ),
                 Expanded(
                   child: Text(questions[i],
-                      style:
-                          const TextStyle(fontSize: 16, height: 1.4)),
+                      style: const TextStyle(fontSize: 20, height: 1.5)),
                 ),
               ],
             ),
@@ -236,12 +373,12 @@ class VisitPrepSummaryScreen extends StatelessWidget {
         children: [
           Text(label,
               style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[600])),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(value,
-              style: const TextStyle(fontSize: 16, height: 1.4)),
+              style: const TextStyle(fontSize: 20, height: 1.4)),
         ],
       ),
     );

@@ -59,7 +59,14 @@ class AiService {
     ].join('\n');
 
     final prompt = '''
-You are a medical communication assistant. A patient just finished a doctor's appointment.
+You are a medical transcription assistant. Summarise ONLY what was explicitly said in the consultation transcript below.
+
+STRICT ANTI-HALLUCINATION RULES (mandatory — violations are harmful):
+- Do NOT add any information that is not explicitly present in the transcript.
+- Do NOT infer, assume, or insert standard medical knowledge, typical treatments, or general health advice.
+- Do NOT explain medical terms unless the doctor explained them in the transcript.
+- If a topic was not discussed during the consultation, write "Not discussed." — do not fill the gap.
+- Use the patient profile only to correctly interpret names/terms already in the transcript, never to add new facts.
 
 Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these two keys:
 
@@ -68,29 +75,27 @@ Return ONLY a valid JSON object — no markdown, no code fences, no explanation 
   "detailed_personalized": "..."
 }
 
-brief_actionable: A scannable bullet list using • bullets containing ONLY:
-1. Medication changes (new, changed, or stopped medications with doses)
-2. Next steps (follow-up appointments, tests, referrals, actions to take at home)
-Readable in under 10 seconds. No explanations or summaries. If there are no changes or next steps, write "• No changes or follow-up needed."
+brief_actionable: A bullet list using • bullets. Include ONLY items explicitly stated in the transcript:
+- Medications: only new, changed, or stopped medications with the exact dose the doctor stated.
+- Next steps: only follow-up appointments, tests, referrals, or home actions the doctor explicitly mentioned.
+If nothing was stated for a category, omit that category entirely. If there is nothing to list, write "• Nothing specific mentioned."
 
-detailed_personalized: A warm, plain-language full summary in $targetLanguage using "you" and "your". Explain medical terms in brackets.
-
-Structure it as EXACTLY four sections. Each section must begin with a bold heading on its own line, written in $targetLanguage, in this exact form (use literal Markdown asterisks):
+detailed_personalized: A plain-language summary in $targetLanguage using "you" and "your".
+Report ONLY what was said. Structure it as four sections with bold headings in $targetLanguage:
 **1. What the doctor found**
 **2. Changes to medications or treatment**
 **3. Next steps and follow-up**
 **4. Answers to your questions**
 
-Formatting rules (mandatory):
-- Put a blank line (two consecutive newlines, "\\n\\n") AFTER each heading.
-- Put a blank line BETWEEN sections (i.e., before the next heading).
-- Write each section's body as one or more short paragraphs separated by blank lines.
-- Do NOT join sections together without blank lines.
-- Translate the section headings into $targetLanguage but keep the numbering 1.–4. and the surrounding ** bold markers.
+Formatting rules:
+- Blank line after each heading and between sections.
+- If nothing relevant was said for a section, write "Not discussed in this visit." under that heading.
+- Do NOT join sections without blank lines.
+- Translate headings into $targetLanguage but keep the 1.–4. numbering and ** markers.
 
 $patientContext
-${preVisit.isNotEmpty ? 'Pre-visit notes:\n$preVisit\n' : ''}
-Consultation transcript:
+${preVisit.isNotEmpty ? 'Pre-visit notes (patient\'s own words — do not treat as medical facts):\n$preVisit\n' : ''}
+Consultation transcript (the only source of truth):
 $transcript
 ''';
 
@@ -126,33 +131,34 @@ $transcript
     final patientContext = _buildPatientContext(patient);
 
     final prompt = '''
-You are a medical communication assistant. A patient has just reviewed the brief summary of their doctor's visit WITH the doctor and corrected any errors. Your job is to rewrite the detailed narrative so it agrees with the corrected brief.
+You are a medical transcription assistant. Rewrite the detailed summary using ONLY the facts in the corrected brief and the transcript.
+
+STRICT ANTI-HALLUCINATION RULES (mandatory):
+- Do NOT add any information absent from both the corrected brief and the transcript.
+- Do NOT add medical knowledge, typical treatments, or general advice.
+- Do NOT explain medical terms unless the doctor explained them in the transcript.
+- The corrected brief is the source of truth for facts. If the transcript conflicts, the brief wins.
+- Use the transcript only for the doctor's own wording and reasoning around facts already in the brief.
+- If a section topic is not covered by either source, write "Not discussed in this visit." under that heading.
 
 Return ONLY the detailed summary text in $targetLanguage. No JSON, no code fences, no preamble.
 
-Treat the CORRECTED BRIEF as the source of truth for facts (medications, doses, next steps, follow-up). If the transcript disagrees with the brief, the brief wins. Use the transcript only to add plain-language context, reasons, and the doctor's reasoning around those facts.
-
-Write a warm, plain-language full summary using "you" and "your". Explain medical terms in brackets.
-
-Structure it as EXACTLY four sections. Each section must begin with a bold heading on its own line, written in $targetLanguage, in this exact form (use literal Markdown asterisks):
+Structure it as four sections with bold headings in $targetLanguage:
 **1. What the doctor found**
 **2. Changes to medications or treatment**
 **3. Next steps and follow-up**
 **4. Answers to your questions**
 
-Formatting rules (mandatory):
-- Put a blank line (two consecutive newlines, "\\n\\n") AFTER each heading.
-- Put a blank line BETWEEN sections.
-- Write each section's body as one or more short paragraphs separated by blank lines.
-- Do NOT join sections together without blank lines.
-- Translate the section headings into $targetLanguage but keep the numbering 1.–4. and the ** bold markers.
+Formatting rules:
+- Blank line after each heading and between sections.
+- Translate headings into $targetLanguage, keep 1.–4. numbering and ** markers.
 
 $patientContext
 
-Corrected brief (source of truth):
+Corrected brief (source of truth for facts):
 $editedBrief
 
-Original consultation transcript (context only):
+Original consultation transcript (context for wording only):
 $transcript
 ''';
 

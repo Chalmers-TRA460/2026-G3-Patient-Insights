@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
+import 'visit_prep_summary_screen.dart';
 
 class PrepareVisitScreen extends StatefulWidget {
   final int? editIndex;
@@ -84,7 +85,12 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
       return;
     }
     await _c.submitQuestionnaire(editIndex: widget.editIndex);
-    Get.back();
+    if (widget.editIndex == null) {
+      // New prep: show summary with "Start Recording" CTA
+      Get.off(() => VisitPrepSummaryScreen(data: _c.visitPreps.first));
+    } else {
+      Get.back();
+    }
   }
 
   @override
@@ -101,6 +107,76 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Step indicator ───────────────────────────────────────────
+            if (!isEditing) ...[
+              Obx(() {
+                final date = _c.appointmentDate.value;
+                final time = _c.appointmentTime.value;
+                if (date.isEmpty) return const SizedBox.shrink();
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0066CC),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'Step 2 of 3',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Prepare questions',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.event_rounded,
+                                size: 16, color: Color(0xFF1D4ED8)),
+                            const SizedBox(width: 8),
+                            Text(
+                              time.isNotEmpty
+                                  ? '$date · $time'
+                                  : date,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF1D4ED8),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+
             // ── Q1: Reason / title ───────────────────────────────────────
             Text(
               'prep.section.reason'.tr,
