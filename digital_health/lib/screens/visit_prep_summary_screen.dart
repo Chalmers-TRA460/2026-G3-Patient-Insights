@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../controllers/health_controller.dart';
 import '../models/questionnaire_model.dart';
+import 'record_consultation_screen.dart';
 
 class VisitPrepSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> data;
   const VisitPrepSummaryScreen({super.key, required this.data});
 
+  void _startRecording() {
+    Get.find<HealthController>().activateVisitPrep(data);
+    Get.to(() => const RecordConsultationScreen());
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = data['title'] as String? ?? '';
     final date = data['date'] as String? ?? '';
-    final summary = data['summary'] as String? ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -33,29 +39,25 @@ class VisitPrepSummaryScreen extends StatelessWidget {
 
             ..._buildBodyRows(data),
 
-            const SizedBox(height: 28),
-            const Divider(),
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    color: Color(0xFF4338CA), size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('summary.ai_summary'.tr,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _summaryText(summary),
-
             const SizedBox(height: 36),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.mic_rounded),
+                label: Text('summary.start_recording'.tr,
+                    style: const TextStyle(fontSize: 17)),
+                onPressed: _startRecording,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
                 onPressed: () => Get.until((route) => route.isFirst),
                 child: Text('summary.back_home'.tr),
               ),
@@ -247,6 +249,4 @@ class VisitPrepSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _summaryText(String text) =>
-      Text(text, style: const TextStyle(fontSize: 16, height: 1.7));
 }

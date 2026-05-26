@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/accessible_audio_card.dart';
-import 'nutrition_screen.dart';
-import 'ai_chat_screen.dart';
 import 'prepare_visit_screen.dart';
 import 'record_consultation_screen.dart';
 import 'visit_prep_history_screen.dart';
@@ -292,65 +290,6 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             }),
-
-            // ── AI Health Chat ──
-            Text('home.health_assistant'.tr,
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B))),
-            const SizedBox(height: 14),
-            GestureDetector(
-              onTap: () => Get.to(() => const AiChatScreen()),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(Icons.auto_awesome_rounded,
-                          color: Color(0xFF1D4ED8), size: 34),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('home.ai_chat'.tr,
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A))),
-                          const SizedBox(height: 4),
-                          Text('home.ai_chat_desc'.tr,
-                              style: const TextStyle(
-                                  fontSize: 14, color: Color(0xFF64748B))),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded,
-                        color: Color(0xFF94A3B8), size: 18),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
 
             // ── Health Profile Completion Card ──
             Obx(() {

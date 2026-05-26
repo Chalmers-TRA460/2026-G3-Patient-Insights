@@ -184,6 +184,7 @@ class AppTranslations extends Translations {
       'summary.reason': 'Reason for your visit',
       'summary.questions': 'Your questions',
       'summary.no_questions': 'No questions added.',
+      'summary.start_recording': 'Start recording visit',
 
       // ── Visit prep history ───────────────────────────────────────────────
       'history.title': 'Visit preparations',
@@ -196,6 +197,15 @@ class AppTranslations extends Translations {
       'history.cancel': 'Cancel',
       'history.delete': 'Delete',
       'history.edit': 'Edit',
+      'history.record': 'Record visit',
+      'history.archive_tooltip': 'Archive (@count)',
+
+      // ── Visit prep archive ───────────────────────────────────────────────
+      'archive.title': 'Archived preparations',
+      'archive.empty': 'No archived preparations',
+      'archive.empty_desc':
+          'Preparations move here automatically after you record the visit.',
+      'archive.restore': 'Move back to active',
 
       // ── Record consultation ──────────────────────────────────────────────
       'record.title': 'Record Visit',
@@ -207,6 +217,13 @@ class AppTranslations extends Translations {
       'record.switch_mic': 'Switch to Mic',
       'record.switch_typing': 'Switch to Typing',
       'record.recording': 'RECORDING',
+      'record.paused': 'PAUSED',
+      'record.pause': 'Pause',
+      'record.resume': 'Resume',
+      'record.recording_hint': 'Speak naturally — recording continuously',
+      'record.paused_hint': 'Recording paused. Resume when you are ready.',
+      'record.tap_pause_or_stop': 'Tap pause to take a break, or stop when done',
+      'record.tap_resume_or_stop': 'Tap resume to continue, or stop to finish',
       'record.mic_error': 'Microphone not initialized. Check permissions.',
       'record.type_hint': 'Type or paste your visit notes here...',
       'record.tap_mic': 'Tap the microphone to start recording.\nSpeak naturally — the app will keep listening.',
@@ -687,6 +704,7 @@ class AppTranslations extends Translations {
       'summary.reason': 'Anledning till ditt besök',
       'summary.questions': 'Dina frågor',
       'summary.no_questions': 'Inga frågor tillagda.',
+      'summary.start_recording': 'Börja spela in besök',
 
       // ── Visit prep history ───────────────────────────────────────────────
       'history.title': 'Besöksförberedelser',
@@ -699,6 +717,15 @@ class AppTranslations extends Translations {
       'history.cancel': 'Avbryt',
       'history.delete': 'Ta bort',
       'history.edit': 'Redigera',
+      'history.record': 'Spela in besök',
+      'history.archive_tooltip': 'Arkiv (@count)',
+
+      // ── Visit prep archive ───────────────────────────────────────────────
+      'archive.title': 'Arkiverade förberedelser',
+      'archive.empty': 'Inga arkiverade förberedelser',
+      'archive.empty_desc':
+          'Förberedelser flyttas hit automatiskt efter att du spelat in besöket.',
+      'archive.restore': 'Flytta tillbaka till aktiva',
 
       // ── Record consultation ──────────────────────────────────────────────
       'record.title': 'Spela in besök',
@@ -710,6 +737,15 @@ class AppTranslations extends Translations {
       'record.switch_mic': 'Byt till mikrofon',
       'record.switch_typing': 'Byt till tangentbord',
       'record.recording': 'SPELAR IN',
+      'record.paused': 'PAUSAD',
+      'record.pause': 'Pausa',
+      'record.resume': 'Återuppta',
+      'record.recording_hint': 'Tala naturligt — spelar in kontinuerligt',
+      'record.paused_hint': 'Inspelning pausad. Återuppta när du är redo.',
+      'record.tap_pause_or_stop':
+          'Tryck pausa för en paus, eller stopp när du är klar',
+      'record.tap_resume_or_stop':
+          'Tryck återuppta för att fortsätta, eller stopp för att avsluta',
       'record.mic_error': 'Mikrofonen är inte initierad. Kontrollera behörigheter.',
       'record.type_hint': 'Skriv eller klistra in dina anteckningar...',
       'record.tap_mic': 'Tryck på mikrofonen för att börja spela in.\nTala naturligt — appen fortsätter lyssna.',

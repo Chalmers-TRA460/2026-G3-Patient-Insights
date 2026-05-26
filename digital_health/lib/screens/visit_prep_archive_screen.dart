@@ -1,56 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/health_controller.dart';
-import 'visit_prep_archive_screen.dart';
 import 'visit_prep_summary_screen.dart';
-import 'prepare_visit_screen.dart';
-import 'record_consultation_screen.dart';
 
-class VisitPrepHistoryScreen extends StatelessWidget {
-  const VisitPrepHistoryScreen({super.key});
+class VisitPrepArchiveScreen extends StatelessWidget {
+  const VisitPrepArchiveScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final c = Get.find<HealthController>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('history.title'.tr),
-        actions: [
-          Obx(() {
-            final count = c.archivedVisitPrepsIndexed.length;
-            return IconButton(
-              icon: const Icon(Icons.inventory_2_outlined),
-              tooltip: 'history.archive_tooltip'.trParams(
-                  {'count': count.toString()}),
-              onPressed: () => Get.to(() => const VisitPrepArchiveScreen()),
-            );
-          }),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Get.to(() => const PrepareVisitScreen()),
-        icon: const Icon(Icons.add),
-        label: Text('history.new'.tr),
-      ),
+      appBar: AppBar(title: Text('archive.title'.tr)),
       body: Obx(() {
-        final entries = c.activeVisitPrepsIndexed;
+        final entries = c.archivedVisitPrepsIndexed;
         if (entries.isEmpty) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.event_note_rounded,
+                Icon(Icons.inventory_2_outlined,
                     size: 64, color: Colors.grey[300]),
                 const SizedBox(height: 16),
-                Text('history.empty'.tr,
+                Text('archive.empty'.tr,
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text(
-                  'history.empty_desc'.tr,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                  textAlign: TextAlign.center,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'archive.empty_desc'.tr,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -62,12 +44,11 @@ class VisitPrepHistoryScreen extends StatelessWidget {
           itemCount: entries.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (_, idx) {
-            final i = entries[idx].key; // original index into c.visitPreps
+            final i = entries[idx].key;
             final prep = entries[idx].value;
             final title = prep['title'] as String? ?? '';
             final date = prep['date'] as String? ?? '';
 
-            // Build chips: new format -> question texts; old formats -> reasons.
             final List<String> chips;
             if (prep.containsKey('questions')) {
               chips = List<String>.from(prep['questions'] ?? const []);
@@ -84,15 +65,9 @@ class VisitPrepHistoryScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3)),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,20 +91,10 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.mic_rounded,
+                          icon: const Icon(Icons.unarchive_outlined,
                               size: 20, color: Color(0xFF2563EB)),
-                          tooltip: 'history.record'.tr,
-                          onPressed: () {
-                            c.activateVisitPrep(prep);
-                            Get.to(() => const RecordConsultationScreen());
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined,
-                              size: 20, color: Color(0xFF64748B)),
-                          tooltip: 'history.edit'.tr,
-                          onPressed: () =>
-                              Get.to(() => PrepareVisitScreen(editIndex: i)),
+                          tooltip: 'archive.restore'.tr,
+                          onPressed: () => c.restoreVisitPrep(i),
                         ),
                         IconButton(
                           icon: Icon(Icons.delete_outline_rounded,
@@ -140,7 +105,8 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                             builder: (_) => AlertDialog(
                               title: Text('history.delete_title'.tr),
                               content: Text(title.isNotEmpty
-                                  ? 'history.delete_named'.trParams({'title': title})
+                                  ? 'history.delete_named'
+                                      .trParams({'title': title})
                                   : 'history.delete_generic'.tr),
                               actions: [
                                 TextButton(
@@ -171,14 +137,14 @@ class VisitPrepHistoryScreen extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEEF2FF),
+                                    color: const Color(0xFFE2E8F0),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     r,
                                     style: const TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF4338CA)),
+                                        color: Color(0xFF475569)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
