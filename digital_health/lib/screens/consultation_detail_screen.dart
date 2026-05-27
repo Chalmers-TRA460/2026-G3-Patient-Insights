@@ -25,6 +25,7 @@ class ConsultationDetailScreen extends StatefulWidget {
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _beforeExpanded = false;
   bool _detailExpanded = false;
+  bool _transcriptExpanded = false;
   bool _isGeneratingQuiz = false;
   bool _editingBrief = false;
   final TextEditingController _briefController = TextEditingController();
@@ -255,6 +256,91 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   ],
                 ),
               ),
+
+              // ── Questions the doctor didn't address ──
+              // Shown only when a preparation was linked AND the AI flagged
+              // one or more of its questions as unanswered in the transcript.
+              Builder(builder: (_) {
+                if (linkedPrep == null) return const SizedBox.shrink();
+                final unanswered = (visit['unansweredQuestions'] as List? ??
+                        const [])
+                    .whereType<String>()
+                    .map((q) => q.trim())
+                    .where((q) => q.isNotEmpty)
+                    .toList();
+                if (unanswered.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: const Color(0xFFFECACA), width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                color: Color(0xFFDC2626), size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'detail.forgotten_title'.tr,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF991B1B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'detail.forgotten_subtitle'.tr,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF7F1D1D),
+                              height: 1.45),
+                        ),
+                        const SizedBox(height: 12),
+                        ...unanswered.asMap().entries.map((e) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(
+                                        top: 6, right: 10),
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFDC2626),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      e.value,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          color: Color(0xFF7F1D1D),
+                                          height: 1.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: 25),
 
               // ── AI Summary Card (conditional) ──
@@ -571,42 +657,107 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
 
               const SizedBox(height: 25),
 
-              // ── Full Conversation Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF475569)),
-                        const SizedBox(width: 10),
-                        Text('detail.transcript'.tr,
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF334155))),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      visit['transcript'] as String? ??
-                          'detail.no_transcript'.tr,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF475569),
-                          height: 1.6),
-                    ),
-                  ],
-                ),
-              ),
+              // ── Full Conversation Card (collapsible, collapsed by default) ──
+              Builder(builder: (_) {
+                final transcript = visit['transcript'] as String? ??
+                    'detail.no_transcript'.tr;
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tappable header — toggles the conversation open/closed
+                      InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () => setState(
+                            () => _transcriptExpanded = !_transcriptExpanded),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.chat_bubble_outline_rounded,
+                                  color: Color(0xFF475569)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text('detail.transcript'.tr,
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF334155))),
+                              ),
+                              Icon(
+                                _transcriptExpanded
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                                color: const Color(0xFF475569),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Transcript body — short preview when collapsed, full
+                      // text plus a "Show less" button when expanded.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        child: AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topCenter,
+                          child: _transcriptExpanded
+                              ? Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      transcript,
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Color(0xFF475569),
+                                          height: 1.6),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextButton.icon(
+                                        onPressed: () => setState(() =>
+                                            _transcriptExpanded = false),
+                                        icon: const Icon(
+                                            Icons.expand_less_rounded,
+                                            color: Color(0xFF475569)),
+                                        label: Text('detail.show_less'.tr,
+                                            style: const TextStyle(
+                                                color: Color(0xFF475569),
+                                                fontWeight:
+                                                    FontWeight.w600)),
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          tapTargetSize: MaterialTapTargetSize
+                                              .shrinkWrap,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  transcript,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF475569),
+                                      height: 1.6),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: 20),
 
               // ── Test My Knowledge ──

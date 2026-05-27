@@ -262,6 +262,10 @@ class AppTranslations extends Translations {
       'quiz.n_questions': '@count questions',
       'quiz.history_empty': 'No quizzes yet',
       'quiz.history_empty_desc': 'Open a past visit and tap "Test My Knowledge" to create your first quiz.',
+      'quiz.not_mentioned_title': 'Not mentioned in your visit',
+      'quiz.not_mentioned_desc': 'This question covers general best-practice advice — your doctor did not specifically discuss it during this consultation.',
+      'detail.forgotten_title': 'Questions you forgot to ask',
+      'detail.forgotten_subtitle': 'These questions from your preparation were not addressed during the visit. Consider raising them next time.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Past Visits',
@@ -309,8 +313,8 @@ class AppTranslations extends Translations {
       // ── Edit consultation ────────────────────────────────────────────────
       'edit_consult.title': 'Edit Visit',
       'edit_consult.save': 'Save Changes',
-      'edit_consult.doctor': 'Doctor Name',
-      'edit_consult.doctor_hint': 'e.g. Dr. Smith',
+      'edit_consult.doctor': 'Visit Title',
+      'edit_consult.doctor_hint': 'e.g. Annual checkup with Dr. Smith',
       'edit_consult.transcript': 'Transcript',
       'edit_consult.transcript_hint': 'Enter the full consultation transcript…',
       'edit_consult.brief_hint': 'Key takeaways, medication changes, next steps…',
@@ -788,6 +792,10 @@ class AppTranslations extends Translations {
       'quiz.n_questions': '@count frågor',
       'quiz.history_empty': 'Inga quiz ännu',
       'quiz.history_empty_desc': 'Öppna ett tidigare besök och tryck "Testa min kunskap" för att skapa ditt första quiz.',
+      'quiz.not_mentioned_title': 'Nämndes inte under ditt besök',
+      'quiz.not_mentioned_desc': 'Den här frågan handlar om allmänna råd — din läkare diskuterade inte detta specifikt under konsultationen.',
+      'detail.forgotten_title': 'Frågor du glömde att ställa',
+      'detail.forgotten_subtitle': 'De här frågorna från din förberedelse togs inte upp under besöket. Överväg att ställa dem nästa gång.',
 
       // ── Consultation history ─────────────────────────────────────────────
       'consult.title': 'Tidigare besök',
@@ -835,8 +843,8 @@ class AppTranslations extends Translations {
       // ── Edit consultation ────────────────────────────────────────────────
       'edit_consult.title': 'Redigera besök',
       'edit_consult.save': 'Spara ändringar',
-      'edit_consult.doctor': 'Läkarnamn',
-      'edit_consult.doctor_hint': 't.ex. Dr. Svensson',
+      'edit_consult.doctor': 'Besökstitel',
+      'edit_consult.doctor_hint': 't.ex. Årlig kontroll hos Dr. Svensson',
       'edit_consult.transcript': 'Transkript',
       'edit_consult.transcript_hint': 'Ange hela konsultationstranskriptet…',
       'edit_consult.brief_hint': 'Viktiga punkter, medicineringsändringar, nästa steg…',

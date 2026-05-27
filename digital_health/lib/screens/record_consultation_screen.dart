@@ -278,23 +278,55 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
     try {
       final targetLanguage =
           Get.find<SettingsController>().resolvedLanguageName;
+
+      // Resolve the linked preparation (if any) so we can pass its title to
+      // the summary prompt AND check whether any prepared questions went
+      // unanswered during the visit.
+      final linkedId = _healthController.activeVisitPrepId.value;
+      String? prepTitle;
+      List<String> prepQuestions = const [];
+      if (linkedId != null) {
+        final i = _healthController.visitPreps
+            .indexWhere((p) => p['id'] == linkedId);
+        if (i != -1) {
+          final prep = _healthController.visitPreps[i];
+          final t = (prep['title'] as String? ?? '').trim();
+          if (t.isNotEmpty) prepTitle = t;
+          prepQuestions = (prep['questions'] as List? ?? const [])
+              .whereType<String>()
+              .map((q) => q.trim())
+              .where((q) => q.isNotEmpty)
+              .toList();
+        }
+      }
+
       final result = await AiService.summarizeConsultation(
         text,
         patient: _healthController.patient.value,
         reason: _healthController.visitTitle.value,
         questions: _healthController.visitQuestions.toList(),
+        preparationTitle: prepTitle,
         targetLanguage: targetLanguage,
       );
 
+      List<String> unanswered = const [];
+      if (prepQuestions.isNotEmpty) {
+        unanswered = await AiService.findUnansweredQuestions(
+          transcript: text,
+          preparedQuestions: prepQuestions,
+        );
+      }
+
+      final aiTitle = (result['visit_title'] ?? '').trim();
+
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final linkedId = _healthController.activeVisitPrepId.value;
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('consultations')
             .add({
-          'doctorName': 'record.doctor'.tr,
+          'doctorName': aiTitle.isNotEmpty ? aiTitle : 'record.doctor'.tr,
           'date': DateTime.now().toIso8601String().split('T')[0],
           'timestamp': FieldValue.serverTimestamp(),
           'transcript': text,
@@ -302,6 +334,7 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
           'detailedSummary': result['detailed_personalized'] ?? '',
           'reason': _healthController.visitTitle.value,
           'questions': _healthController.visitQuestions.toList(),
+          'unansweredQuestions': unanswered,
           if (linkedId != null) 'linkedVisitPrepId': linkedId,
         });
 

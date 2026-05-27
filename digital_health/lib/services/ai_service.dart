@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -39,13 +40,15 @@ class AiService {
   }
 
   // ── 2. Consultation summarisation ────────────────────────────────────────
-  // Transcript + patient profile → dual-level summary (brief + detailed).
-  // Returns a map with keys 'brief_actionable' and 'detailed_personalized'.
+  // Transcript + patient profile → dual-level summary (brief + detailed) plus
+  // a concise visit title. Returns a map with keys 'brief_actionable',
+  // 'detailed_personalized', and 'visit_title'.
   static Future<Map<String, String>> summarizeConsultation(
     String transcript, {
     Patient? patient,
     String reason = '',
     List<String> questions = const [],
+    String? preparationTitle,
     String targetLanguage = 'English',
   }) async {
     final patientContext = _buildPatientContext(patient);
@@ -58,6 +61,9 @@ class AiService {
         'Patient\'s questions:\n${cleanQuestions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}',
     ].join('\n');
 
+    final cleanPrepTitle = preparationTitle?.trim();
+    final hasPrepTitle = cleanPrepTitle != null && cleanPrepTitle.isNotEmpty;
+
     final prompt = '''
 You are a medical transcription assistant. Summarise ONLY what was explicitly said in the consultation transcript below.
 
@@ -68,12 +74,19 @@ STRICT ANTI-HALLUCINATION RULES (mandatory — violations are harmful):
 - If a topic was not discussed during the consultation, write "Not discussed." — do not fill the gap.
 - Use the patient profile only to correctly interpret names/terms already in the transcript, never to add new facts.
 
-Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these two keys:
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation — with exactly these three keys:
 
 {
+  "visit_title": "...",
   "brief_actionable": "...",
   "detailed_personalized": "..."
 }
+
+visit_title: A concise, patient-friendly, descriptive title for this visit in $targetLanguage.
+- Maximum 4–5 words. No trailing punctuation. Use sentence case (capitalise only the first word and proper nouns).
+- Describe the main reason for the visit or its primary outcome (e.g. "Annual checkup", "Back pain follow-up", "Migraine medication review").
+- Do NOT include the patient's name, the date, or generic words like "Consultation" or "Visit" on their own.
+- If a linked preparation name is provided below, take it into consideration when formulating the title — the title may build on or refine the preparation name, but should still reflect what actually happened in the transcript.
 
 brief_actionable: A bullet list using • bullets. Include ONLY items explicitly stated in the transcript:
 - Medications: only new, changed, or stopped medications with the exact dose the doctor stated.
@@ -94,7 +107,7 @@ Formatting rules:
 - Translate headings into $targetLanguage but keep the 1.–4. numbering and ** markers.
 
 $patientContext
-${preVisit.isNotEmpty ? 'Pre-visit notes (patient\'s own words — do not treat as medical facts):\n$preVisit\n' : ''}
+${hasPrepTitle ? 'Linked preparation name (consider this when formulating the visit_title):\n$cleanPrepTitle\n' : ''}${preVisit.isNotEmpty ? 'Pre-visit notes (patient\'s own words — do not treat as medical facts):\n$preVisit\n' : ''}
 Consultation transcript (the only source of truth):
 $transcript
 ''';
@@ -108,11 +121,16 @@ $transcript
           .trim();
       final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
       return {
+        'visit_title': (decoded['visit_title'] as String? ?? '').trim(),
         'brief_actionable': (decoded['brief_actionable'] as String? ?? '').trim(),
         'detailed_personalized': (decoded['detailed_personalized'] as String? ?? '').trim(),
       };
     } catch (_) {
-      return {'brief_actionable': '', 'detailed_personalized': raw.trim()};
+      return {
+        'visit_title': '',
+        'brief_actionable': '',
+        'detailed_personalized': raw.trim(),
+      };
     }
   }
 
@@ -164,6 +182,66 @@ $transcript
 
     final raw = await _callNemotron(prompt);
     return raw.trim();
+  }
+
+  // ── 2c. Detect prepared questions the doctor did not address ─────────────
+  // Given the consultation transcript and the patient's prepared questions
+  // (from a linked preparation form), return the subset of questions that
+  // were either never asked or were asked but received no clear answer.
+  // The returned strings are exact copies of the originals — the caller
+  // filters out anything the AI paraphrased.
+  static Future<List<String>> findUnansweredQuestions({
+    required String transcript,
+    required List<String> preparedQuestions,
+  }) async {
+    final clean = preparedQuestions
+        .map((q) => q.trim())
+        .where((q) => q.isNotEmpty)
+        .toList();
+    if (clean.isEmpty || transcript.trim().isEmpty) return [];
+
+    final numbered = clean
+        .asMap()
+        .entries
+        .map((e) => '${e.key + 1}. ${e.value}')
+        .join('\n');
+
+    final prompt = '''
+You are reviewing a doctor's consultation to identify which of the patient's prepared questions were NOT addressed.
+
+Return ONLY a valid JSON array of strings — no markdown, no code fences, no explanation.
+Each string must be one of the prepared questions copied EXACTLY (do not paraphrase, do not translate, do not renumber).
+
+Include a question in the array ONLY if BOTH conditions hold:
+1. The question was either never asked during the visit, OR was raised but the doctor gave no clear answer.
+2. You are confident the topic was not addressed. When in doubt, leave it OUT — false positives are worse than false negatives.
+
+If every prepared question was addressed, return an empty array [].
+
+Patient's prepared questions:
+$numbered
+
+Consultation transcript:
+$transcript
+''';
+
+    final raw = await _callNemotron(prompt);
+    try {
+      final cleaned = raw
+          .trim()
+          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+          .trim();
+      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      final asked = clean.toSet();
+      return decoded
+          .whereType<String>()
+          .map((s) => s.trim())
+          .where(asked.contains)
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── 3. AI health Q&A ─────────────────────────────────────────────────────
@@ -233,23 +311,27 @@ You are a medical education assistant helping a patient check what they understo
 
 Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly 5 objects.
 
-Each object must have exactly these four keys:
+Each object must have exactly these five keys:
 {
   "question": "...",
   "options": ["...", "...", "...", "..."],
   "correctIndex": 0,
-  "explanation": "..."
+  "explanation": "...",
+  "notMentioned": false
 }
 
 STRICT GROUNDING RULE (mandatory):
 For any question about medications, dosages, next steps, tests, or follow-up appointments, you MUST base the question ONLY on information explicitly spoken in the transcript. If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details. Never substitute standard medical timelines or typical clinical practice for what was actually said.
 
 LIFESTYLE FLEXIBILITY (limited exception):
-You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, you MUST set "notMentioned": true for that question, and the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
+
+For every question that IS grounded in the transcript, set "notMentioned": false.
 
 Additional rules:
 - Each question must have exactly 4 options.
 - correctIndex is the zero-based index of the correct option.
+- IMPORTANT: vary the position of the correct option across questions — do not always put the correct answer first. Distribute correctIndex values across 0, 1, 2, and 3.
 - explanation is 1–2 sentences in plain language.
 - Do NOT ask about diagnoses or test results — only actionable items the patient must remember.
 - Write all text in $targetLanguage.
@@ -267,14 +349,28 @@ $transcript
           .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
           .trim();
       final decoded = jsonDecode(cleaned) as List<dynamic>;
-      return decoded
+      final parsed = decoded
           .whereType<Map<String, dynamic>>()
           .map(QuizQuestion.fromJson)
           .where((q) => q.question.isNotEmpty && q.options.length >= 2)
           .toList();
+      return parsed.map(_shuffleOptions).toList();
     } catch (_) {
       return [];
     }
+  }
+
+  // Randomise the order of options so the correct answer isn't always at A.
+  static QuizQuestion _shuffleOptions(QuizQuestion q) {
+    if (q.options.length < 2) return q;
+    final indices = List<int>.generate(q.options.length, (i) => i)
+      ..shuffle(Random());
+    final newOptions = indices.map((i) => q.options[i]).toList();
+    final newCorrect = indices.indexOf(q.correctIndex);
+    return q.copyWith(
+      options: newOptions,
+      correctIndex: newCorrect < 0 ? 0 : newCorrect,
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
