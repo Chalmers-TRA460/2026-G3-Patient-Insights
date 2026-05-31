@@ -123,6 +123,10 @@ class AppTranslations extends Translations {
       'home.action.profile': 'My Health\nProfile',
       'home.action.update': 'Update\nRecord',
       'home.action.quiz': 'Test My\nKnowledge',
+      'home.upcoming.title': 'UPCOMING VISIT',
+      'home.upcoming.today': 'Today',
+      'home.upcoming.tomorrow': 'Tomorrow',
+      'home.upcoming.in_days': 'In @days days',
 
       // ── Prepare visit ────────────────────────────────────────────────────
       'prep.title.edit': 'Edit preparation',
@@ -651,6 +655,10 @@ class AppTranslations extends Translations {
       'home.action.profile': 'Min Hälso-\nProfil',
       'home.action.update': 'Uppdatera\nJournalen',
       'home.action.quiz': 'Testa min\nkunskap',
+      'home.upcoming.title': 'KOMMANDE BESÖK',
+      'home.upcoming.today': 'Idag',
+      'home.upcoming.tomorrow': 'Imorgon',
+      'home.upcoming.in_days': 'Om @days dagar',
 
       // ── Prepare visit ────────────────────────────────────────────────────
       'prep.title.edit': 'Redigera förberedelse',
