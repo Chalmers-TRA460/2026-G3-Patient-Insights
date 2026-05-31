@@ -89,8 +89,10 @@ visit_title: A concise, patient-friendly, descriptive title for this visit in $t
 - If a linked preparation name is provided below, take it into consideration when formulating the title — the title may build on or refine the preparation name, but should still reflect what actually happened in the transcript.
 
 brief_actionable: A bullet list using • bullets. Include ONLY items explicitly stated in the transcript:
-- Medications: only new, changed, or stopped medications with the exact dose the doctor stated.
-- Next steps: only follow-up appointments, tests, referrals, or home actions the doctor explicitly mentioned.
+- Medications: ALL medications mentioned or prescribed during the visit, with the exact dose and frequency the doctor stated. Include new, changed, continued, and stopped medications.
+- Lifestyle & self-care: any recommendations about exercise, diet, activity, rest, or things to do at home.
+- Next steps: only follow-up appointments, tests, referrals, or actions the doctor explicitly mentioned.
+- Warning signs: any symptoms the doctor said to watch for, or when to seek urgent care.
 If nothing was stated for a category, omit that category entirely. If there is nothing to list, write "• Nothing specific mentioned."
 
 detailed_personalized: A plain-language summary in $targetLanguage using "you" and "your".
@@ -306,10 +308,27 @@ Use "you" and "your". No medical jargon. Be precise and reassuring.
   }) async {
     final patientContext = _buildPatientContext(patient);
 
+    // Dynamically calculate the number of quiz questions based on transcript word count.
+    // If the conversation is short (e.g. < 150 words), 2 questions are enough.
+    // As length increases, scale the questions up to a maximum of 10.
+    final words = transcript.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    int numQuestions = 5; // default fallback
+    if (words < 150) {
+      numQuestions = 2;
+    } else if (words < 300) {
+      numQuestions = 3;
+    } else if (words < 600) {
+      numQuestions = 5;
+    } else if (words < 1000) {
+      numQuestions = 7;
+    } else {
+      numQuestions = 10;
+    }
+
     final prompt = '''
 You are a medical education assistant helping a patient check what they understood from their doctor's visit.
 
-Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly 5 objects.
+Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly $numQuestions objects.
 
 Each object must have exactly these five keys:
 {

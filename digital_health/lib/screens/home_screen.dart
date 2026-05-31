@@ -9,6 +9,7 @@ import 'record_consultation_screen.dart';
 import 'visit_prep_history_screen.dart';
 import 'quiz_history_screen.dart';
 import '../widgets/viewing_banner.dart';
+import 'visit_prep_summary_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -52,6 +53,149 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Upcoming Visit Reminder ──
+            Obx(() {
+              if (controller.isViewingOther) return const SizedBox.shrink();
+
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+
+              // Find future visit preps that are not archived
+              final upcoming = controller.visitPreps.where((prep) {
+                if (prep['archived'] == true) return false;
+                final dateStr = prep['date'] as String? ?? '';
+                if (dateStr.isEmpty) return false;
+                final parsed = DateTime.tryParse(dateStr);
+                if (parsed == null) return false;
+                final prepDay = DateTime(parsed.year, parsed.month, parsed.day);
+                return !prepDay.isBefore(today);
+              }).toList();
+
+              if (upcoming.isEmpty) return const SizedBox.shrink();
+
+              // Sort by date ascending to get the nearest upcoming visit
+              upcoming.sort((a, b) {
+                final da = DateTime.tryParse(a['date'] ?? '') ?? DateTime(9999);
+                final db = DateTime.tryParse(b['date'] ?? '') ?? DateTime(9999);
+                return da.compareTo(db);
+              });
+              final nearest = upcoming.first;
+              final nearestDate = DateTime.tryParse(nearest['date'] ?? '')!;
+              final nearestDay = DateTime(nearestDate.year, nearestDate.month, nearestDate.day);
+              final daysUntil = nearestDay.difference(today).inDays;
+              final title = nearest['title'] as String? ?? '';
+              final time = nearest['time'] as String? ?? '';
+
+              String countdown;
+              if (daysUntil == 0) {
+                countdown = 'home.upcoming.today'.tr;
+              } else if (daysUntil == 1) {
+                countdown = 'home.upcoming.tomorrow'.tr;
+              } else {
+                countdown = 'home.upcoming.in_days'.trParams({'days': daysUntil.toString()});
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: GestureDetector(
+                  onTap: () => Get.to(() => VisitPrepSummaryScreen(data: nearest)),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF97316), Color(0xFFFB923C)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.event_rounded,
+                              color: Colors.white, size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'home.upcoming.title'.tr,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white70,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                title.isNotEmpty ? title : nearest['date'] as String? ?? '',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text(
+                                    time.isNotEmpty
+                                        ? '${nearest['date']} · $time'
+                                        : nearest['date'] as String? ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      countdown,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: Colors.white70, size: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+
             // ── Quick Actions ──
             Obx(() {
               final accessible = settings.isAccessibilityMode.value;
