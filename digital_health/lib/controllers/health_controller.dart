@@ -55,7 +55,7 @@ class HealthController extends GetxController {
       visitPreps
           .asMap()
           .entries
-          .where((e) => e.value['archived'] != true)
+          .where((e) => e.value['archived'] != true && e.value['completed'] != true)
           .toList();
 
   List<MapEntry<int, Map<String, dynamic>>> get archivedVisitPrepsIndexed =>
@@ -701,6 +701,7 @@ class HealthController extends GetxController {
     final updated = List<Map<String, dynamic>>.from(
         visitPreps.map((e) => Map<String, dynamic>.from(e)));
     updated[idx]['archived'] = true;
+    updated[idx]['completed'] = true;
     visitPreps.value = updated;
 
     final user = _auth.currentUser;

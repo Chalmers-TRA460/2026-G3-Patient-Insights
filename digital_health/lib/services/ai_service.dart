@@ -7,13 +7,12 @@ import '../models/patient_model.dart';
 import '../models/quiz_question_model.dart';
 
 class AiService {
-  static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
-  static const String _openRouterUrl =
-      'https://openrouter.ai/api/v1/chat/completions';
-
   static String get _groqKey => dotenv.env['GROQ_API_KEY'] ?? '';
   static const String _whisperUrl =
       'https://api.groq.com/openai/v1/audio/transcriptions';
+  static const String _groqChatUrl =
+      'https://api.groq.com/openai/v1/chat/completions';
+  static const String _groqChatModel = 'llama-3.3-70b-versatile';
 
   // ── 1. Whisper transcription ──────────────────────────────────────────────
   // Accepts raw audio bytes — works on both mobile and web.
@@ -112,7 +111,7 @@ Consultation transcript (the only source of truth):
 $transcript
 ''';
 
-    final raw = await _callNemotron(prompt);
+    final raw = await _callGroq(prompt);
     try {
       final cleaned = raw
           .trim()
@@ -180,7 +179,7 @@ Original consultation transcript (context for wording only):
 $transcript
 ''';
 
-    final raw = await _callNemotron(prompt);
+    final raw = await _callGroq(prompt);
     return raw.trim();
   }
 
@@ -225,7 +224,7 @@ Consultation transcript:
 $transcript
 ''';
 
-    final raw = await _callNemotron(prompt);
+    final raw = await _callGroq(prompt);
     try {
       final cleaned = raw
           .trim()
@@ -259,7 +258,7 @@ $patientContext
 Patient question: $question
 ''';
 
-    return _callNemotron(prompt);
+    return _callGroq(prompt);
   }
 
   // ── 4. Pre-visit summary ─────────────────────────────────────────────────
@@ -294,7 +293,7 @@ Write 1–2 short, plain sentences in $targetLanguage so the patient can confirm
 Use "you" and "your". No medical jargon. Be precise and reassuring.
 ''';
 
-    return _callNemotron(prompt);
+    return _callGroq(prompt);
   }
 
   // ── 5. Knowledge-check quiz ───────────────────────────────────────────────
@@ -341,7 +340,7 @@ Consultation transcript:
 $transcript
 ''';
 
-    final raw = await _callNemotron(prompt);
+    final raw = await _callGroq(prompt);
     try {
       final cleaned = raw
           .trim()
@@ -394,18 +393,16 @@ Patient profile:
 ''';
   }
 
-  static Future<String> _callNemotron(String prompt) async {
+  static Future<String> _callGroq(String prompt) async {
     try {
       final response = await http.post(
-        Uri.parse(_openRouterUrl),
+        Uri.parse(_groqChatUrl),
         headers: {
-          'Authorization': 'Bearer $_openRouterKey',
+          'Authorization': 'Bearer $_groqKey',
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://patientinsights.chalmers.se',
-          'X-Title': 'Patient Insights',
         },
         body: jsonEncode({
-          'model': 'nvidia/nemotron-3-super-120b-a12b:free',
+          'model': _groqChatModel,
           'messages': [
             {'role': 'user', 'content': prompt}
           ],

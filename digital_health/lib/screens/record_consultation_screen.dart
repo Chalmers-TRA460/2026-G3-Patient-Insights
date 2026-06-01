@@ -48,11 +48,293 @@ class _RecordConsultationScreenState extends State<RecordConsultationScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_healthController.activeVisitPrepId.value != null) {
+        _showVisitPrepReminder();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _recorder.dispose();
     _transcriptController.dispose();
     _timer?.cancel();
     super.dispose();
+  }
+
+  // ── Visit prep reminder popup ─────────────────────────────────────────────
+
+  void _showVisitPrepReminder() {
+    final c = _healthController;
+    final reason = c.visitTitle.value.trim();
+    final date = c.appointmentDate.value.trim();
+    final time = c.appointmentTime.value.trim();
+    final questions = c.visitQuestions
+        .where((q) => q.trim().isNotEmpty)
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.62,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: const BoxDecoration(
+                  border: Border(
+                      bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.assignment_outlined,
+                          color: Color(0xFF1D4ED8), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your Visit Preparation',
+                            style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B)),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Review before you start recording',
+                            style: TextStyle(
+                                fontSize: 13, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Scrollable content
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Appointment chip
+                      if (date.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: const Color(0xFF86EFAC)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.calendar_today_rounded,
+                                  size: 15, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 8),
+                              Text(
+                                time.isNotEmpty ? '$date  ·  $time' : date,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF15803D)),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (date.isNotEmpty) const SizedBox(height: 18),
+
+                      // Reason
+                      if (reason.isNotEmpty) ...[
+                        const Text(
+                          'Reason for visit',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF94A3B8),
+                              letterSpacing: 0.8),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Text(
+                            reason,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.5,
+                                color: Color(0xFF334155)),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Questions
+                      if (questions.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            const Text(
+                              'Questions to ask your doctor',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF94A3B8),
+                                  letterSpacing: 0.8),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1D4ED8),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${questions.length}',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ...questions.asMap().entries.map((e) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.fromLTRB(
+                                  14, 12, 14, 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          const Color(0xFF1D4ED8),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${e.key + 1}',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                            fontWeight:
+                                                FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      e.value,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          height: 1.45,
+                                          color: Color(0xFF334155)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
+
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+
+              // CTA button
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                      top: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.mic_rounded, size: 20),
+                    label: const Text(
+                      'Got it — ready to record',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0066CC),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ── Recording ─────────────────────────────────────────────────────────────
