@@ -11,11 +11,7 @@
 |---------------------|--------------------------------------------|
 | **Group**           | TRA460_Group_3                             |
 | **Version**         | 2.0                                        |
-<<<<<<< Updated upstream
 | **Date**            | 2026-06-04                                 |
-=======
-| **Date**            | 2026-05-12                                 |
->>>>>>> Stashed changes
 | **Clinical Mentor** | Sara Hansson, Specialist in anesthesia and intensive care, Sahlgrenska University Hospital |
 | **Group Members**   | Xiaoyu Chen (MPSOF), Xiyu Du (MPSOF), Nathalie Hogberg (MPCAS), Sugash Krishnamoorthy (MPDSC) |
 
@@ -39,13 +35,8 @@
 -->
 
 > **A way to** provide accessible and understandable health information
-<<<<<<< Updated upstream
 > **for** adult patients who struggle to retain information from clinical encounters
 > **that** improves their ability to follow their care plan.
-=======
-> **for** adult patients who struggle to access and/or understand their health information
-> **that** improves patient understanding of and adherence to their care plan.
->>>>>>> Stashed changes
 
 ---
 
@@ -284,8 +275,4 @@ Success from the patient's perspective means they can open the app, quickly gras
 | Version | Date       | Summary of Changes                                  |
 |---------|------------|-----------------------------------------------------|
 | 1.0     | 2026-04-17 | Initial draft after first clinical mentor meeting   |
-<<<<<<< Updated upstream
 | 2.0     | 2026-06-04 | Revised version based on feedback                   |
-=======
-| 2.0     | 2026-05-12 | Revised version based on feedback                   |
->>>>>>> Stashed changes
