@@ -235,7 +235,7 @@ Success from the patient's perspective means they can open the app, quickly gras
 -->
 
 - **Platform:** iOS, Android
-- **Key Integrations:** APIs in the future
+- **Key Integrations:** APIs
 - **Candidate Tech Stack:** TBD
 - **Infrastructure:** TBD
 
