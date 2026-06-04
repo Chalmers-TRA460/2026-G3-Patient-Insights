@@ -4,9 +4,7 @@
 
  ## Project
 
- Patient Insights — a Flutter mobile app that helps patients understand their clinical records from 1177.se in plain la
-     nguage. Core features: health profile management, AI-assisted Q&A, voice-captured consultation recording with AI summa
-     rization, and pre-visit preparation.
+ Patient Insights — a Flutter mobile app that helps patients understand their clinical records from 1177.se in plain language. Core features: health profile management, AI-assisted Q&A, voice-captured consultation recording with AI summarization, and pre-visit preparation.
 
  ## Commands
 
@@ -23,22 +21,16 @@ flutter build ios        # iOS release
  ## Architecture
 
  **State management:** GetX (`get` 4.6.6). Two global controllers are registered at startup in `main.dart`:
- - `AuthController` — Firebase Auth (email/password + Google Sign-In) and demo/skip-auth mode
+- `AuthController` — Firebase Auth (email/password + Google Sign-In) and demo/skip-auth mode
 - `HealthController` — all Firestore reads/writes for patient profile, consultations, and symptoms
 
-Controllers are injected once via `Get.put()` and accessed anywhere with `Get.find<T>()` or `controller.obs` reactive
-     bindings.
+Controllers are injected once via `Get.put()` and accessed anywhere with `Get.find<T>()` or `controller.obs` reactive bindings.
 
-**Navigation:** GetX named routes for main screens (`/login`, `/`, `/profile`, `/edit-profile`, `/history`). Supplemen
-     tary screens (AI chat, prepare visit, record consultation) use `Get.to()` without named routes.
+**Navigation:** GetX named routes for main screens (`/login`, `/`, `/profile`, `/edit-profile`, `/history`). Supplementary screens (AI chat, prepare visit, record consultation) use `Get.to()` without named routes.
 
-**AI integration:** `lib/services/ai_service.dart` calls OpenRouter's API (Nemotron 120B model) for two operations: `a
-     skAi()` (conversational Q&A with patient context injected) and `summarizeConsultation()` (transcript → structured SOAP
-     -style summary). The API key is currently hardcoded in this file.
+**AI integration:** `lib/services/ai_service.dart` calls OpenRouter's API (Nemotron 120B model) for two operations: `askAi()` (conversational Q&A with patient context injected) and `summarizeConsultation()` (transcript → structured SOAP-style summary). The API key is currently hardcoded in this file.
 
-**Speech-to-text:** `RecordConsultationScreen` uses `speech_to_text` with continuous 30 s windows and auto-restart. Ac
-     cumulated transcript is sent to `AiService.summarizeConsultation()`, then saved to Firestore under `users/{uid}/consul
-     tations/{docId}`.
+**Speech-to-text:** `RecordConsultationScreen` uses `speech_to_text` with continuous 30 s windows and auto-restart. Accumulated transcript is sent to `AiService.summarizeConsultation()`, then saved to Firestore under `users/{uid}/consultations/{docId}`.
 
 **Firestore schema:**
 ```
@@ -52,10 +44,8 @@ users/{uid}
         symptoms[], questions[]
  ```
 
- **Firebase config:** `lib/firebase_options.dart` (generated; do not hand-edit). Project ID: `ems-app-710ec`. Google Si
-     gn-In server client ID is hardcoded in `auth_controller.dart`.
- **Firebase config:** `lib/firebase_options.dart` (generated; do not hand-edit). Project ID: `ems-app-710ec`. Google Si
-     gn-In server client ID is hardcoded in `auth_controller.dart`.
+ **Firebase config:** `lib/firebase_options.dart` (generated; do not hand-edit). Project ID: `ems-app-710ec`. Google Sign-In server client ID is hardcoded in `auth_controller.dart`.
+ **Firebase config:** `lib/firebase_options.dart` (generated; do not hand-edit). Project ID: `ems-app-710ec`. Google Sign-In server client ID is hardcoded in `auth_controller.dart`.
 
  ## Key Files
 
@@ -76,4 +66,4 @@ users/{uid}
 - API keys (OpenRouter, Google client ID) are hardcoded in source — do not add new secrets this way.
 - `test/widget_test.dart` references a non-existent `MyApp` class; tests will not pass without fixing this.
 - `lib/screens/nutrition_screen.dart` appears to be an unused duplicate of `ai_chat_screen.dart`.
-  - No logging framework — `print()` is used throughout
+- No logging framework — `print()` is used throughout
