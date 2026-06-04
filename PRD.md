@@ -234,7 +234,7 @@ Success from the patient's perspective means they can open the app, quickly gras
   Claude Code) understand the technical landscape you are considering.
 -->
 
-- **Platform:** Android, iOS later
+- **Platform:** iOS, Android
 - **Key Integrations:** APIs in the future
 - **Candidate Tech Stack:** TBD
 - **Infrastructure:** TBD
