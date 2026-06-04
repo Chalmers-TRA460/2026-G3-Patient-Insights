@@ -162,9 +162,11 @@ class HealthController extends GetxController {
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     await _firestore
         .collection('users')
-        .doc(user.uid)
+        .doc(uid)
         .collection('consultations')
         .add({
       'doctorName': 'record.doctor'.tr,
@@ -338,12 +340,14 @@ class HealthController extends GetxController {
   Future<void> updateConsultation(int index, Map<String, dynamic> fields) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     final docId = consultations[index]['id'] as String?;
     if (docId == null) return;
     try {
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('consultations')
           .doc(docId)
           .update(fields);
@@ -358,12 +362,14 @@ class HealthController extends GetxController {
   Future<void> deleteConsultation(int index) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     final docId = consultations[index]['id'] as String?;
     if (docId == null) return;
     try {
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('consultations')
           .doc(docId)
           .delete();
@@ -379,9 +385,11 @@ class HealthController extends GetxController {
   Future<void> updatePatientData(Map<String, dynamic> data) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
-      await _firestore.collection('users').doc(user.uid).set(data, SetOptions(merge: true));
-      await fetchPatientData();
+      await _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
+      if (!isViewingOther) await fetchPatientData();
     } catch (e) {
       Get.snackbar('Error', 'Failed to update health profile');
     }
@@ -456,8 +464,10 @@ class HealthController extends GetxController {
       String category, List<MedicalEntry> list) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
-      await _firestore.collection('users').doc(user.uid).set({
+      await _firestore.collection('users').doc(uid).set({
         category: list.map((e) => e.toJson()).toList(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -706,10 +716,12 @@ class HealthController extends GetxController {
 
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .set({'visitPreps': updated}, SetOptions(merge: true));
     } catch (e) {
       print('archiveActiveVisitPrep error: $e');
@@ -725,10 +737,12 @@ class HealthController extends GetxController {
 
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     try {
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .set({'visitPreps': updated}, SetOptions(merge: true));
     } catch (e) {
       print('restoreVisitPrep error: $e');
@@ -828,6 +842,8 @@ class HealthController extends GetxController {
   Future<void> submitQuestionnaire({int? editIndex}) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
 
     final cleanQuestions = visitQuestions
         .map((q) => q.trim())
@@ -837,7 +853,7 @@ class HealthController extends GetxController {
 
     isGeneratingSummary.value = true;
     try {
-      final fhirResponse = _buildFhirResponseJson(user.uid);
+      final fhirResponse = _buildFhirResponseJson(uid);
 
       final existing = editIndex != null ? visitPreps[editIndex] : null;
       final entry = <String, dynamic>{
@@ -870,7 +886,7 @@ class HealthController extends GetxController {
 
       _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .set({'visitPreps': updated}, SetOptions(merge: true))
           .catchError((e) => print('visitPrep save failed: $e'));
     } catch (e) {
@@ -891,9 +907,11 @@ class HealthController extends GetxController {
 
     final user = _auth.currentUser;
     if (user == null) return;
+    final uid = activeUid;
+    if (uid == null) return;
     _firestore
         .collection('users')
-        .doc(user.uid)
+        .doc(uid)
         .set({'visitPreps': updated}, SetOptions(merge: true))
         .catchError((e) => print('deleteVisitPrep error: $e'));
   }

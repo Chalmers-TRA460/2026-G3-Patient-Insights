@@ -329,22 +329,20 @@ You are a medical education assistant helping a patient check what they understo
 
 Return ONLY a valid JSON array — no markdown, no code fences, no explanation — containing exactly $numQuestions objects.
 
-Each object must have exactly these five keys:
+Each object must have exactly these four keys:
 {
   "question": "...",
   "options": ["...", "...", "...", "..."],
   "correctIndex": 0,
-  "explanation": "...",
-  "notMentioned": false
+  "explanation": "..."
 }
 
-STRICT GROUNDING RULE (mandatory):
-For any question about medications, dosages, next steps, tests, or follow-up appointments, you MUST base the question ONLY on information explicitly spoken in the transcript. If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details. Never substitute standard medical timelines or typical clinical practice for what was actually said.
-
-LIFESTYLE FLEXIBILITY (limited exception):
-You may generate 1 or 2 questions about general lifestyle recommendations (e.g., posture, hydration, rest, basic self-care) that are reasonable given the patient's inferred condition, even if those specific tips were not spoken in the transcript. When you do this, you MUST set "notMentioned": true for that question, and the explanation field MUST explicitly state: "This is general best-practice advice and was not specifically mentioned during your visit."
-
-For every question that IS grounded in the transcript, set "notMentioned": false.
+STRICT GROUNDING RULE (mandatory — violations are harmful):
+- Every question MUST be based ONLY on information explicitly spoken in the transcript.
+- Do NOT generate questions about topics, advice, or recommendations that were not discussed during the visit.
+- If a follow-up timeline, specific dose, or appointment date was not mentioned in the transcript, do NOT create a question about it and do NOT invent plausible-sounding details.
+- Never substitute standard medical timelines, typical clinical practice, or general lifestyle advice for what was actually said.
+- If the transcript does not contain enough actionable items for $numQuestions questions, return fewer questions rather than inventing content.
 
 Additional rules:
 - Each question must have exactly 4 options.
