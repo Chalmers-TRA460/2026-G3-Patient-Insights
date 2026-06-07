@@ -1,28 +1,23 @@
-# Patient Insights [Required]
+# Patient Insights
 ## Product Requirements Document
 
 > **TRA460: Digital Health Implementation** | Chalmers University of Technology
 
-> **v1.0 Section Guide:**
-> - **[Required]** — Must be substantive for this submission to pass.
-> - **[Recommended]** — Optional for v1.0, but strengthens your foundation.
-> - **[Expand Later]** — Scaffolding for future iterations. Initial thoughts welcome.
-
 ---
 
-### Project Details [Required]
+### Project Details
 
 | Field               | Value                                      |
 |---------------------|--------------------------------------------|
 | **Group**           | TRA460_Group_3                             |
-| **Version**         | 1.0                                        |
-| **Date**            | 2026-04-17                                 |
+| **Version**         | 2.0                                        |
+| **Date**            | 2026-06-04                                 |
 | **Clinical Mentor** | Sara Hansson, Specialist in anesthesia and intensive care, Sahlgrenska University Hospital |
 | **Group Members**   | Xiaoyu Chen (MPSOF), Xiyu Du (MPSOF), Nathalie Hogberg (MPCAS), Sugash Krishnamoorthy (MPDSC) |
 
 ---
 
-## 1. Needs Statement [Required]
+## 1. Needs Statement
 
 <!--
   REQUIRED FOR v1.0
@@ -40,12 +35,12 @@
 -->
 
 > **A way to** provide accessible and understandable health information
-> **for** adult patients
-> **that** improves patient understanding of and adherence to their care plan.
+> **for** adult patients who struggle to retain information from clinical encounters
+> **that** improves their ability to follow their care plan.
 
 ---
 
-### 1.1 Clinical Context & Background [Required]
+### 1.1 Clinical Context & Background
 
 <!--
   REQUIRED FOR v1.0
@@ -56,11 +51,13 @@
   - Why does it matter — clinically, economically, or humanly?
 -->
 
-Patients cannot easily access or understand the information in their health journals. The system is built for clinicians, not patients, and the language used in the notes is therefore difficult for anyone without a medical background to understand. As a result, many patients struggle with the current system, regardless of age or digital literacy. 
+During clinical visits, patients often struggle to understand the medical terminology used by healthcare professionals. Even when explanations are provided verbally, many patients find it difficult to recall the information and instructions after the visit. As a result, they may not fully understand their diagnosis, treatment plan, or follow-up recommendations, which can lead to reduced adherence to medical advice.
 
-When a patient is uncertain of their care plan, they call the doctor's office and ask questions. This results in added work for clinicians between and after appointments. 
+While patients in Sweden can access their health journals through 1177, these records are written for clinicians, not patients. The language used in the notes is therefore difficult for anyone without a medical background to understand. As a result, many patients struggle with the current system, regardless of age or digital literacy. This makes it difficult to revisit what was discussed during the visit, making it harder to adhere to the provided care plan. 
 
-### 1.2 Key Clinical Insights [Required]
+When patients are uncertain about what they are supposed to do, they often contact the clinic for clarification. These follow-up calls result in additional work for clinicians between and after appointments, adding to the already high workload. 
+
+### 1.2 Key Clinical Insights
 
 <!--
   REQUIRED FOR v1.0
@@ -77,7 +74,7 @@ When a patient is uncertain of their care plan, they call the doctor's office an
 -->
 
 #### **Observations & Current Workflow:**
-Currently, medical records are designed and written primarily for medical professionals, rather than for the patients receiving the care. While patients have the ability to access their medical records online through the 1177.se portal, the system is difficult to navigate and the medical language used is not always easy for a layperson to understand. Because the digital systems do not adequately support patient comprehension, physicians sometimes have to resort to a manual workaround: writing physical paper notes to hand to the patient during the visit.
+Currently, medical records are designed and written primarily for medical professionals, rather than for the patients receiving the care. While patients have the ability to access their medical records online through the 1177.se portal, the system is difficult to navigate and the medical language used is not always easy for a layperson to understand. During a meeting with our clinical mentor Sara Hansson, she mentioned that she often writes down instructions on paper to give to patients at the end of the visit, as a way to support understanding and adherence. This highlights the limitations of the existing digital tools. 
 
 #### **Friction Points & Inefficiencies:**
 The core friction point lies in the communication gap between the clinic and the patient's everyday life. Specifically:
@@ -86,7 +83,7 @@ The core friction point lies in the communication gap between the clinic and the
 
 **The "Care Circle" Gap**: Patients often rely on their support network, but relatives and friends lack a reliable way to understand what the physician communicated, especially if the patient themselves did not fully grasp the information during the visit.
 
-### 1.3 Existing Solutions & Gaps [Required]
+### 1.3 Existing Solutions & Gaps
 
 <!--
   REQUIRED FOR v1.0
@@ -99,7 +96,7 @@ The core friction point lies in the communication gap between the clinic and the
 
 Patients can access their journals and the doctor's notes on 1177 to recall the content of the visits. But there are always terminologies that are hard for the patients to understand. So our project is aimed to bridge the knowledge gap between patients and doctors and create a user-friendly application that is integrated with 1177.
 
-### 1.4 Success Metrics [Recommended]
+### 1.4 Success Metrics
 
 <!--
   RECOMMENDED FOR v1.0
@@ -109,15 +106,13 @@ Patients can access their journals and the doctor's notes on 1177 to recall the 
   how would you measure or observe that outcome?
 -->
 
-- [e.g., Time-to-intervention reduced by X%]
-- [e.g., Nurse documentation burden reduced from Y to Z minutes/day]
--
+- Improved care plan adherence - This can be measured through indicators such as medication adherence (assessed via patient self-report or prescription refill data) or completion of recommended follow-up actions. 
 
 ---
 
 ## 2. Stakeholders & Users
 
-### 2.1 Primary User(s) [Required]
+### 2.1 Primary User(s)
 
 <!--
    REQUIRED FOR v1.0
@@ -126,9 +121,9 @@ Patients can access their journals and the doctor's notes on 1177 to recall the 
   Be specific: "Cardiac nurses in outpatient clinics" not just "nurses."
 -->
 
-Adult patients who struggle to access and/or understand their health information. 
+Adult patients who struggle to retain information from clinical encounters.
 
-### 2.2 Other Stakeholders [Required]
+### 2.2 Other Stakeholders
 
 <!--
   REQUIRED FOR v1.0
@@ -146,7 +141,7 @@ Adult patients who struggle to access and/or understand their health information
 
 **Regulatory and Compliance Bodies (e.g., IMY)**: Authorities responsible for enforcing the General Data Protection Regulation (GDPR) and the Swedish Patient Data Act (Patientdatalagen). Since the proposed solution involves extracting and processing sensitive health data through an LLM, these bodies heavily influence the privacy and security requirements of the project.
 
-### 2.3 User Journey — Current State [Recommended]
+### 2.3 User Journey — Current State
 
 <!--
   RECOMMENDED FOR v1.0
@@ -156,9 +151,11 @@ Adult patients who struggle to access and/or understand their health information
   "The patient wakes up, measures their..., calls the clinic to..."
 -->
 
+The patient has an upcoming visit, so they open the app to prepare for the appointment. On the day of the visit, the patient goes to the clinic and explains their concerns using the preparation they completed beforehand. They then start recording the conversation and discuss the issue with the clinician. At the end of the visit, the patient stops the recording and reviews the generated summary together with the clinician to ansure it is accurate. After the visit, the patient uses the app to follow their care plan. 
+
 ---
 
-## 3. Solution Vision [Required]
+## 3. Solution Vision
 
 <!--
   REQUIRED FOR v1.0
@@ -179,7 +176,7 @@ Success from the patient's perspective means they can open the app, quickly gras
 
 ## 4. Requirements
 
-### 4.1 Functional Requirements (MoSCoW) [Recommended]
+### 4.1 Functional Requirements (MoSCoW)
 
 <!--
   RECOMMENDED FOR v1.0
@@ -191,22 +188,21 @@ Success from the patient's perspective means they can open the app, quickly gras
 -->
 
 **Must Have** — *Non-negotiable for a functioning MVP*
-- [e.g., Patient can log daily symptom entries via a mobile interface]
--
+- Audio recording of the visit
+- AI-generated summary of the visit
 
 **Should Have** — *High value, but the MVP could technically function without these*
-- [e.g., Clinician receives a weekly summary report of patient-logged data]
--
+- Patient visit preparation
+- Quiz to test patient understanding
 
 **Could Have** — *Nice-to-have if time and resources allow*
-- [e.g., Push notification reminders for symptom logging]
--
+- Support for more languages
+- Overall health summary based on key information from recent visits 
 
 **Won't Have** — *Explicitly out of scope for this project*
-- [e.g., Integration with national EHR systems]
--
+- Integration with 1177
 
-### 4.2 Non-Functional Requirements & Constraints [Recommended]
+### 4.2 Non-Functional Requirements & Constraints
 
 <!--
   RECOMMENDED FOR v1.0
@@ -218,10 +214,17 @@ Success from the patient's perspective means they can open the app, quickly gras
   - Interoperability standards (FHIR, HL7, openEHR)
   - Performance, offline capability
 -->
+- GDPR-compliant data handling
+- Secure storage of recording and summaries
+- Avoid MDR classification (wellness-oriented functionality)
+- WCAG-compliant interface
+- Standardized data formats for future interoperability
+- Efficient summary generation
+- Offline recording capability
 
 ---
 
-## 5. Technical Direction [Expand Later]
+## 5. Technical Direction
 
 <!--
   EXPAND IN LATER ITERATIONS
@@ -231,14 +234,14 @@ Success from the patient's perspective means they can open the app, quickly gras
   Claude Code) understand the technical landscape you are considering.
 -->
 
-- **Platform:** [iOS / Android / Web / Cross-platform / TBD]
-- **Key Integrations:** [EHR systems, wearables, sensors, APIs, etc.]
-- **Candidate Tech Stack:** [SpeziVibe, Swift/Kotlin, React, etc. / TBD]
-- **Infrastructure:** [Cloud provider, on-premise, hybrid / TBD]
+- **Platform:** iOS, Android
+- **Key Integrations:** APIs
+- **Candidate Tech Stack:** TBD
+- **Infrastructure:** TBD
 
 ---
 
-## 6. Open Questions & Risks [Required]
+## 6. Open Questions & Risks
 
 <!--
   REQUIRED FOR v1.0
@@ -267,9 +270,9 @@ Success from the patient's perspective means they can open the app, quickly gras
 
 ---
 
-## Changelog [Required]
+## Changelog
 
 | Version | Date       | Summary of Changes                                  |
 |---------|------------|-----------------------------------------------------|
 | 1.0     | 2026-04-17 | Initial draft after first clinical mentor meeting   |
-|         |            |                                                     |
+| 2.0     | 2026-06-04 | Revised version based on feedback                   |

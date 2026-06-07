@@ -18,14 +18,14 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Owners can read and write their own profile.
-      // Authorized caregivers can read (but not write) a patient's profile.
+      // Authorized caregivers can read and write a patient's profile.
       allow read:  if isOwner(userId) || isAuthorizedCaregiver(userId);
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) || isAuthorizedCaregiver(userId);
 
       match /consultations/{consultId} {
-        // Same caregiver read access extends to the consultations subcollection.
+        // Same caregiver access extends to the consultations subcollection.
         allow read:  if isOwner(userId) || isAuthorizedCaregiver(userId);
-        allow write: if isOwner(userId);
+        allow write: if isOwner(userId) || isAuthorizedCaregiver(userId);
       }
     }
   }
