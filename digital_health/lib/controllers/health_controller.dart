@@ -683,6 +683,8 @@ class HealthController extends GetxController {
   void activateVisitPrep(Map<String, dynamic> prep) {
     activeVisitPrepId.value = prep['id'] as String?;
     visitTitle.value = (prep['title'] as String? ?? '').trim();
+    appointmentDate.value = (prep['date'] as String? ?? '').trim();
+    appointmentTime.value = (prep['time'] as String? ?? '').trim();
     visitQuestions.assignAll(
       List<String>.from(prep['questions'] ?? const [])
           .map((q) => q.trim())
@@ -844,20 +846,34 @@ class HealthController extends GetxController {
         'id': existing?['id'] ??
             'prep-${DateTime.now().microsecondsSinceEpoch}',
         'title': visitTitle.value.trim(),
-        'date': existing != null
-            ? existing['date']
-            : (appointmentDate.value.isNotEmpty
-                ? appointmentDate.value
-                : DateTime.now().toIso8601String().split('T')[0]),
-        'time': existing != null
-            ? (existing['time'] ?? '')
-            : appointmentTime.value,
+        'date': appointmentDate.value.isNotEmpty
+            ? appointmentDate.value
+            : (existing?['date'] ?? DateTime.now().toIso8601String().split('T')[0]),
+        'time': appointmentTime.value,
         'questions': cleanQuestions,
         'fhirResponse': fhirResponse,
-        'summary': '',
+        'summary': existing?['summary'] ?? '',
         // Preserve archived state on edit (default false for new entries).
         'archived': existing?['archived'] ?? false,
       };
+
+      // Generate the AI confirmation paragraph so the prep summary screen
+      // shows a human-readable "here's what you prepared" sentence.
+      try {
+        final targetLanguage =
+            Get.find<SettingsController>().resolvedLanguageName;
+        final aiSummary = await AiService.summarizeVisitPrep(
+          reason: visitTitle.value.trim(),
+          questions: cleanQuestions,
+          targetLanguage: targetLanguage,
+        );
+        if (aiSummary.trim().isNotEmpty) {
+          entry['summary'] = aiSummary.trim();
+          visitPrepSummary.value = aiSummary.trim();
+        }
+      } catch (_) {
+        // Non-critical — prep is saved without summary if AI fails.
+      }
 
       final updated = List<Map<String, dynamic>>.from(
           visitPreps.map((e) => Map<String, dynamic>.from(e)));

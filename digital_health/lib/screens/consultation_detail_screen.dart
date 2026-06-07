@@ -379,7 +379,11 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                   );
                 }
 
-                // New dual-level format
+                // New dual-level format — auto-expand detail when brief is empty
+                if (briefSummary.isEmpty && detailedSummary.isNotEmpty && !_detailExpanded) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => setState(() => _detailExpanded = true));
+                }
                 if (briefSummary.isNotEmpty || detailedSummary.isNotEmpty) {
                   return Container(
                     width: double.infinity,
@@ -483,9 +487,11 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
                               ),
                             ],
                           ),
-                        ] else if (briefSummary.isNotEmpty) ...[
+                        ] else ...[
                           const SizedBox(height: 18),
-                          ..._buildBriefPoints(briefSummary),
+                          ..._buildBriefPoints(briefSummary.isNotEmpty
+                              ? briefSummary
+                              : '• See full summary below.'),
                           const SizedBox(height: 18),
                           const Divider(
                               color: Color(0xFFBBF7D0),

@@ -24,6 +24,10 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
     if (widget.editIndex != null) {
       _c.loadVisitPrepForEdit(widget.editIndex!);
       _reasonController = TextEditingController(text: _c.visitTitle.value);
+      // Sync date/time from saved prep into controller
+      final prep = _c.visitPreps[widget.editIndex!];
+      _c.appointmentDate.value = (prep['date'] as String? ?? '');
+      _c.appointmentTime.value = (prep['time'] as String? ?? '');
       if (_c.visitQuestions.isEmpty) {
         _questionControllers.add(TextEditingController());
       } else {
@@ -32,7 +36,6 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
         }
       }
     } else {
-      _c.clearVisitNotes();
       _reasonController = TextEditingController();
       _questionControllers.add(TextEditingController());
     }
@@ -86,7 +89,6 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
     }
     await _c.submitQuestionnaire(editIndex: widget.editIndex);
     if (widget.editIndex == null) {
-      // New prep: show summary with "Start Recording" CTA
       Get.off(() => VisitPrepSummaryScreen(data: _c.visitPreps.first));
     } else {
       Get.back();
@@ -107,74 +109,64 @@ class _PrepareVisitScreenState extends State<PrepareVisitScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Step indicator ───────────────────────────────────────────
+            // ── Step badge + read-only date chip ─────────────────────────
             if (!isEditing) ...[
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0066CC),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Step 2 of 3',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text('Prepare questions',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
+              const SizedBox(height: 10),
               Obx(() {
                 final date = _c.appointmentDate.value;
                 final time = _c.appointmentTime.value;
                 if (date.isEmpty) return const SizedBox.shrink();
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0066CC),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'Step 2 of 3',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Text('Prepare questions',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.event_rounded,
-                                size: 16, color: Color(0xFF1D4ED8)),
-                            const SizedBox(width: 8),
-                            Text(
-                              time.isNotEmpty
-                                  ? '$date · $time'
-                                  : date,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF1D4ED8),
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
+                      const Icon(Icons.event_rounded,
+                          size: 16, color: Color(0xFF1D4ED8)),
+                      const SizedBox(width: 8),
+                      Text(
+                        time.isNotEmpty ? '$date · $time' : date,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF1D4ED8),
+                            fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
                 );
               }),
+              const SizedBox(height: 20),
             ],
 
             // ── Q1: Reason / title ───────────────────────────────────────

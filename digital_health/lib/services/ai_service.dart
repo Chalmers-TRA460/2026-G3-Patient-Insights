@@ -113,24 +113,22 @@ Consultation transcript (the only source of truth):
 $transcript
 ''';
 
-    final raw = await _callGroq(prompt);
+    final raw = await _callGroq(prompt, jsonMode: true);
     try {
-      final cleaned = raw
-          .trim()
-          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
-          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
-          .trim();
-      final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+      final decoded = jsonDecode(_extractJsonObject(raw)) as Map<String, dynamic>;
       return {
         'visit_title': (decoded['visit_title'] as String? ?? '').trim(),
         'brief_actionable': (decoded['brief_actionable'] as String? ?? '').trim(),
         'detailed_personalized': (decoded['detailed_personalized'] as String? ?? '').trim(),
       };
     } catch (_) {
+      // Last resort: return the raw text in the detailed field so the user
+      // at least sees the content rather than nothing.
+      final fallback = raw.trim();
       return {
         'visit_title': '',
         'brief_actionable': '',
-        'detailed_personalized': raw.trim(),
+        'detailed_personalized': fallback.startsWith('{') ? '' : fallback,
       };
     }
   }
@@ -228,12 +226,7 @@ $transcript
 
     final raw = await _callGroq(prompt);
     try {
-      final cleaned = raw
-          .trim()
-          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
-          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
-          .trim();
-      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      final decoded = jsonDecode(_extractJsonArray(raw)) as List<dynamic>;
       final asked = clean.toSet();
       return decoded
           .whereType<String>()
@@ -361,12 +354,7 @@ $transcript
 
     final raw = await _callGroq(prompt);
     try {
-      final cleaned = raw
-          .trim()
-          .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
-          .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
-          .trim();
-      final decoded = jsonDecode(cleaned) as List<dynamic>;
+      final decoded = jsonDecode(_extractJsonArray(raw)) as List<dynamic>;
       final parsed = decoded
           .whereType<Map<String, dynamic>>()
           .map(QuizQuestion.fromJson)
@@ -391,6 +379,33 @@ $transcript
     );
   }
 
+  // ── JSON extraction ──────────────────────────────────────────────────────
+  // Strips markdown fences then finds the first/last brace or bracket so
+  // any preamble or postamble the model adds is ignored before decoding.
+  static String _extractJsonObject(String raw) {
+    final stripped = raw
+        .trim()
+        .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+        .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+        .trim();
+    final start = stripped.indexOf('{');
+    final end = stripped.lastIndexOf('}');
+    if (start != -1 && end > start) return stripped.substring(start, end + 1);
+    return stripped;
+  }
+
+  static String _extractJsonArray(String raw) {
+    final stripped = raw
+        .trim()
+        .replaceAll(RegExp(r'^```json?\s*', multiLine: true), '')
+        .replaceAll(RegExp(r'```\s*$', multiLine: true), '')
+        .trim();
+    final start = stripped.indexOf('[');
+    final end = stripped.lastIndexOf(']');
+    if (start != -1 && end > start) return stripped.substring(start, end + 1);
+    return stripped;
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   static String _buildPatientContext(Patient? p) {
@@ -412,20 +427,23 @@ Patient profile:
 ''';
   }
 
-  static Future<String> _callGroq(String prompt) async {
+  // jsonMode forces the model to emit valid JSON — use for all structured calls.
+  static Future<String> _callGroq(String prompt, {bool jsonMode = false}) async {
     try {
+      final body = <String, dynamic>{
+        'model': _groqChatModel,
+        'messages': [
+          {'role': 'user', 'content': prompt}
+        ],
+        if (jsonMode) 'response_format': {'type': 'json_object'},
+      };
       final response = await http.post(
         Uri.parse(_groqChatUrl),
         headers: {
           'Authorization': 'Bearer $_groqKey',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'model': _groqChatModel,
-          'messages': [
-            {'role': 'user', 'content': prompt}
-          ],
-        }),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 200) {

@@ -100,6 +100,11 @@ class VisitPrepSummaryScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
+                  // ── AI quick summary ───────────────────────────────────
+                  _AiSummaryCard(summary: data['summary'] as String? ?? ''),
+
+                  const SizedBox(height: 24),
+
                   // ── Questions header ───────────────────────────────────
                   const Text('Questions to Remember for Your Meeting',
                       style: TextStyle(
@@ -389,4 +394,42 @@ class VisitPrepSummaryScreen extends StatelessWidget {
     );
   }
 
+}
+
+// Shows the AI-generated confirmation paragraph from summarizeVisitPrep().
+// Hidden when summary is empty (e.g. AI failed or prep is very old).
+class _AiSummaryCard extends StatelessWidget {
+  final String summary;
+  const _AiSummaryCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    if (summary.trim().isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome_rounded,
+              color: Color(0xFF1D4ED8), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              summary.trim(),
+              style: const TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF1E3A8A),
+                  height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

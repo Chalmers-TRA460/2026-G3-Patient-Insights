@@ -270,15 +270,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 15),
-
-                        // Demo mode
-                        TextButton(
-                          onPressed: () => Get.offAllNamed('/'),
-                          child: Text('auth.btn.demo'.tr,
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.grey)),
-                        ),
                       ],
                     ),
                   ),
