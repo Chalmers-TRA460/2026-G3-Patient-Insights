@@ -234,10 +234,10 @@ Success from the patient's perspective means they can open the app, quickly gras
   Claude Code) understand the technical landscape you are considering.
 -->
 
-- **Platform:** iOS, Android
-- **Key Integrations:** APIs
-- **Candidate Tech Stack:** TBD
-- **Infrastructure:** TBD
+- **Platform:** iOS, Android, Web
+- **Key Integrations:** Firebase (Authentication, Firestore)
+- **Candidate Tech Stack:** Flutter (Dart) for frontend, GetX for state management, LLM API for summaries
+- **Infrastructure:** Firebase (BaaS)
 
 ---
 
